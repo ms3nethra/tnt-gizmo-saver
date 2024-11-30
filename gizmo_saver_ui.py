@@ -10,16 +10,13 @@ class GizmoSaverUI(QWidget):
 
     def init_ui(self):
         self.main_layout = QVBoxLayout(self)
-        self.main_layout.addWidget(self.create_input_groupbox())
-
-    def create_input_groupbox(self):
-        input_groupbox = QGroupBox("Gizmo Input Details")
-        input_layout = QVBoxLayout(input_groupbox)
-        input_layout.addLayout(self.create_input_section())
-
-        return input_groupbox
-
+        self.main_layout.addWidget(self.create_input_section())
+        self.main_layout.addWidget(self.filepath_format_section())
+        
     def create_input_section(self):
+        input_groupbox = QGroupBox("Gizmo Input Details")
+        input_main_layout = QVBoxLayout(input_groupbox)
+
         # author input
         author_label = QLabel("Author:")
         self.author_input = QLineEdit()
@@ -73,20 +70,56 @@ class GizmoSaverUI(QWidget):
         form_layout2.addRow(disciption_label, self.disciption_input)
 
         # Combine Input Layouts
-        create_input_layout = QHBoxLayout()
-        create_input_layout.addLayout(form_layout1)
-        create_input_layout.addSpacing(20)
-        create_input_layout.addLayout(form_layout2)
+        combined_input_layout = QHBoxLayout()
+        combined_input_layout.addLayout(form_layout1)
+        combined_input_layout.addSpacing(20)
+        combined_input_layout.addLayout(form_layout2)
 
-        return create_input_layout
+        input_main_layout.addLayout(combined_input_layout)
+        return input_groupbox
 
-    """
-    def filepath_format_widgets(self):
+    
+    def filepath_format_section(self):
+        location_groupbox = QGroupBox("Location")
+        location_main_layout = QVBoxLayout(location_groupbox)
 
-    def gizmo_nameformat_display_widgets(self):
+        save_to_label = QLabel("Save To:")
+        self.filepath_input = QLineEdit("C:/Users/author1/.nuke")
 
-    def save_cancel_widgets(self)
-    """
+        Directory_path_button = QPushButton("...")
+        Directory_path_button.setFixedSize(30, 24)
+
+        path_reset_button = QPushButton("r")
+        path_reset_button.setFixedSize(30, 24)
+
+        file_format_label = QLabel("File Format:")
+        self.file_format_input = QComboBox()
+        self.file_format_input.addItems(["_", "-", "."])
+
+        filepath_format_layout = QFormLayout()
+        filepath_format_layout.addRow(save_to_label, self.filepath_input)
+        filepath_format_layout.addRow(file_format_label, self.file_format_input)
+
+        directory_reset_button_layout = QHBoxLayout()
+        directory_reset_button_layout.addWidget(Directory_path_button)
+        directory_reset_button_layout.addWidget(path_reset_button)
+
+        filepath_format_combine_layout = QHBoxLayout()
+        filepath_format_combine_layout.addLayout(filepath_format_layout)
+        filepath_format_combine_layout.addLayout(directory_reset_button_layout)
+
+        location_main_layout.addLayout(filepath_format_combine_layout)
+
+        return location_groupbox
+
+
+
+
+    
+    #def gizmo_nameformat_display_widgets(self):
+
+    #def save_cancel_widgets(self)
+    
 
 
 
