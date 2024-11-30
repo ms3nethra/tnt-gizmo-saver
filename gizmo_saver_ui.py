@@ -6,25 +6,11 @@ class GizmoSaverUI(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("TNT Gizmo Saver")
-        self.setMinimumSize(600, 400)
         self.init_ui()
 
     def init_ui(self):
-        self.main_layout = QVBoxLayout(self)
-        self.main_layout.setContentsMargins(10, 10, 10, 10)
-        self.main_layout.setSpacing(10)
-
-        self.main_layout.addWidget(self.create_input_section())
-        self.main_layout.addWidget(self.create_filepath_format_section())
-        self.main_layout.addWidget(self.create_gizmo_nameformat_display_section())
-        self.main_layout.addLayout(self.create_save_cancel_section())
-        
-        self.main_layout.addStretch()
-        
-    def create_input_section(self):
+        # ----------------------------------------------------------------------------
         input_groupbox = QGroupBox("Gizmo Input Details")
-        input_groupbox.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-
         input_main_layout = QVBoxLayout(input_groupbox)
 
         # author input
@@ -34,14 +20,13 @@ class GizmoSaverUI(QWidget):
         # Department input
         dept_label = QLabel("Department:")
         self.dept_input = QComboBox()
-        self.dept_input.addItems(["comp", "lighting", "fx", "animation"])
+        # self.dept_input.addItems(["comp", "lighting", "fx", "animation"])
 
         self.add_dept_button = QPushButton("+")
-        self.add_dept_button.setFixedSize(24, 24)
 
         dept_layout = QHBoxLayout()
-        dept_layout.addWidget(self.dept_input, 9)
-        dept_layout.addWidget(self.add_dept_button, 1)
+        dept_layout.addWidget(self.dept_input)
+        dept_layout.addWidget(self.add_dept_button)
 
         # Gizmo name
         gizmo_label = QLabel("Gizmo Name:")
@@ -86,10 +71,8 @@ class GizmoSaverUI(QWidget):
         combined_input_layout.addLayout(form_layout2)
 
         input_main_layout.addLayout(combined_input_layout)
-        return input_groupbox
 
-    
-    def create_filepath_format_section(self):
+        # --------------------------------------create_filepath_format_section----------------------------------------------------
         location_groupbox = QGroupBox("Location")
         location_groupbox.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
 
@@ -99,10 +82,8 @@ class GizmoSaverUI(QWidget):
         self.filepath_input = QLineEdit("C:/Users/author1/.nuke")
 
         Directory_path_button = QPushButton("...")
-        Directory_path_button.setFixedSize(30, 24)
 
         path_reset_button = QPushButton("r")
-        path_reset_button.setFixedSize(30, 24)
 
         file_format_label = QLabel("File Format:")
         self.file_format_input = QComboBox()
@@ -128,9 +109,7 @@ class GizmoSaverUI(QWidget):
 
         location_main_layout.addLayout(filepath_format_combine_layout)
 
-        return location_groupbox
-
-    def create_gizmo_nameformat_display_section(self):
+        # ---------------------------------------create_gizmo_nameformat_display_section---------------------------------------------------
         display_groupbox = QGroupBox("Name Format Display")
         display_groupbox.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
         display_groupbox.setMinimumHeight(100)
@@ -143,25 +122,27 @@ class GizmoSaverUI(QWidget):
 
         display_main_layout.addWidget(self.file_format_output)
 
-        return display_groupbox
+        # -----------------------------------------create_save_cancel_section-------------------------------------------------
 
-    def create_save_cancel_section(self):
         save_cancel_main_layout = QVBoxLayout()
 
         self.save_button = QPushButton("Save")
-        self.save_button.setFixedSize(80, 30)
 
         self.cancel_button = QPushButton("Cancel")
-        self.cancel_button.setFixedSize(80, 30)
 
         save_cancel_layout = QHBoxLayout()
-        save_cancel_layout.addStretch()
         save_cancel_layout.addWidget(self.save_button)
         save_cancel_layout.addWidget(self.cancel_button)
 
         save_cancel_main_layout.addLayout(save_cancel_layout)
 
-        return save_cancel_main_layout
+        # ------------------------------------------------------------------------------------------
+        self.main_layout = QVBoxLayout(self)
+        
+        self.main_layout.addWidget(input_groupbox)
+        self.main_layout.addWidget(location_groupbox)
+        self.main_layout.addWidget(display_groupbox)
+        self.main_layout.addLayout(save_cancel_main_layout)
         
     
 if __name__ == "__main__":
