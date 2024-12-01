@@ -9,7 +9,7 @@ class GizmoSaverUI(QWidget):
         self.init_ui()
 
     def init_ui(self):
-        # ----------------------------------------------------------------------------
+        # -------------------------------create_input_section---------------------------------------------
         input_groupbox = QGroupBox("Gizmo Input Details")
         input_main_layout = QVBoxLayout(input_groupbox)
 
@@ -23,6 +23,7 @@ class GizmoSaverUI(QWidget):
         # self.dept_input.addItems(["comp", "lighting", "fx", "animation"])
 
         self.add_dept_button = QPushButton("+")
+        self.add_dept_button.setMaximumWidth(24)
 
         dept_layout = QHBoxLayout()
         dept_layout.addWidget(self.dept_input)
@@ -31,12 +32,13 @@ class GizmoSaverUI(QWidget):
         # Gizmo name
         gizmo_label = QLabel("Gizmo Name:")
         self.gizmo_name_input = QLineEdit()
+        gizmo_name_form_layout = QFormLayout()
+        gizmo_name_form_layout.addRow(gizmo_label, self.gizmo_name_input)
 
         # Form Layouts 1 (Author, Department, Gizmo Name)
         form_layout1 = QFormLayout()
         form_layout1.addRow(author_label, self.author_input)
         form_layout1.addRow(dept_label, dept_layout)
-        form_layout1.addRow(gizmo_label, self.gizmo_name_input)
 
         # Version Section (Major and Minor)
         major_label = QLabel("Major:")
@@ -60,7 +62,6 @@ class GizmoSaverUI(QWidget):
 
         # Form Layout 2 (Version and Description)
         form_layout2 = QFormLayout()
-        form_layout2.addRow(QLabel(""))
         form_layout2.addRow(version_layout)
         form_layout2.addRow(disciption_label, self.disciption_input)
 
@@ -71,6 +72,7 @@ class GizmoSaverUI(QWidget):
         combined_input_layout.addLayout(form_layout2)
 
         input_main_layout.addLayout(combined_input_layout)
+        input_main_layout.addLayout(gizmo_name_form_layout)
 
         # --------------------------------------create_filepath_format_section----------------------------------------------------
         location_groupbox = QGroupBox("Location")
@@ -82,8 +84,10 @@ class GizmoSaverUI(QWidget):
         self.filepath_input = QLineEdit("C:/Users/author1/.nuke")
 
         Directory_path_button = QPushButton("...")
+        Directory_path_button.setMaximumWidth(24)
 
         path_reset_button = QPushButton("r")
+        path_reset_button.setMaximumWidth(24)
 
         file_format_label = QLabel("File Format:")
         self.file_format_input = QComboBox()
@@ -123,16 +127,18 @@ class GizmoSaverUI(QWidget):
         display_main_layout.addWidget(self.file_format_output)
 
         # -----------------------------------------create_save_cancel_section-------------------------------------------------
-
         save_cancel_main_layout = QVBoxLayout()
 
         self.save_button = QPushButton("Save")
-
+        self.save_button.setMaximumWidth(80)
         self.cancel_button = QPushButton("Cancel")
+        self.cancel_button.setMaximumWidth(80)
 
         save_cancel_layout = QHBoxLayout()
+        
         save_cancel_layout.addWidget(self.save_button)
         save_cancel_layout.addWidget(self.cancel_button)
+        save_cancel_layout.setAlignment(Qt.AlignRight)
 
         save_cancel_main_layout.addLayout(save_cancel_layout)
 
