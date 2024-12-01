@@ -6,11 +6,19 @@ class GizmoSaverUI(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("TNT Gizmo Saver")
+        self.set_style_sheet()
         self.init_ui()
+
+    def set_style_sheet(self):
+        self.groupbox_small_tittle = """QGroupBox {
+        font-size: 12px;
+        }
+        """
 
     def init_ui(self):
         # -------------------------------create_input_section---------------------------------------------
         input_groupbox = QGroupBox("Gizmo Input Details")
+        input_groupbox.setStyleSheet(self.groupbox_small_tittle)
         input_main_layout = QVBoxLayout(input_groupbox)
 
         # author input
@@ -20,7 +28,7 @@ class GizmoSaverUI(QWidget):
         # Department input
         dept_label = QLabel("Department:")
         self.dept_input = QComboBox()
-        # self.dept_input.addItems(["comp", "lighting", "fx", "animation"])
+        self.dept_input.addItems(["comp", "lighting", "fx", "animation"])
 
         self.add_dept_button = QPushButton("+")
         self.add_dept_button.setMaximumWidth(24)
@@ -76,6 +84,7 @@ class GizmoSaverUI(QWidget):
 
         # --------------------------------------create_filepath_format_section----------------------------------------------------
         location_groupbox = QGroupBox("Location")
+        location_groupbox.setStyleSheet(self.groupbox_small_tittle)
         location_groupbox.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
 
         location_main_layout = QVBoxLayout(location_groupbox)
@@ -115,6 +124,7 @@ class GizmoSaverUI(QWidget):
 
         # ---------------------------------------create_gizmo_nameformat_display_section---------------------------------------------------
         display_groupbox = QGroupBox("Name Format Display")
+        display_groupbox.setStyleSheet(self.groupbox_small_tittle)
         display_groupbox.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
         display_groupbox.setMinimumHeight(100)
 
