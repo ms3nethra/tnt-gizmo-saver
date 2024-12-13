@@ -1,5 +1,6 @@
 import os
 import nuke
+import sys
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -8,3 +9,4 @@ icons_path = os.path.join(current_dir, "icons")
 
 nuke.pluginAddPath(modules_path)
 nuke.pluginAddPath(icons_path)
+
