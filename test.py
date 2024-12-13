@@ -12,21 +12,21 @@ def get_nuke_directory():
     nuke_directory = os.path.join(user_home_directory, ".nuke")
     return nuke_directory
 
-def open_nuke_directory():
-    nuke_directory = get_nuke_directory()
+def open_nuke_directory(directory):
+    directory = get_nuke_directory()
     
     try:
-        if not os.path.exists(nuke_directory):
+        if not os.path.exists(directory):
                 nuke.message("The .nuke folder does not exist in your home directory.")
                 return
 
         # Open the directory in the system's file explorer
         if platform.system() == "Windows":  # Windows
-            os.startfile(nuke_directory)
+            os.startfile(directory)
         elif platform.system() == "Darwin":  # macOS
-            subprocess.run(["open", nuke_directory], check=True)
+            subprocess.run(["open", directory], check=True)
         elif platform.system() == "Linux":  # Linux
-            subprocess.run(["xdg-open", nuke_directory], check=True)
+            subprocess.run(["xdg-open", directory], check=True)
         else:
             nuke.message("Unsupported operating system.")
             

@@ -16,6 +16,14 @@ class GizmoSaverUI(QWidget):
         """
 
     def init_ui(self):
+        # -------------------------------Convert to group section---------------------------------------------
+        cvrt_groupbox = QGroupBox("")
+        cvrt_main_layout = QVBoxLayout(cvrt_groupbox)
+        self.cvrt_group_button = QPushButton("Convert to Group")
+        self.cvrt_group_button.setMaximumWidth(160)
+
+        cvrt_main_layout.addWidget(self.cvrt_group_button, alignment=Qt.AlignCenter)
+
         # -------------------------------create_input_section---------------------------------------------
         input_groupbox = QGroupBox("Gizmo Input Details")
         input_groupbox.setStyleSheet(self.groupbox_small_tittle)
@@ -40,13 +48,15 @@ class GizmoSaverUI(QWidget):
         # Gizmo name
         gizmo_label = QLabel("Gizmo Name:")
         self.gizmo_name_input = QLineEdit()
-        gizmo_name_form_layout = QFormLayout()
-        gizmo_name_form_layout.addRow(gizmo_label, self.gizmo_name_input)
 
         # Form Layouts 1 (Author, Department, Gizmo Name)
         form_layout1 = QFormLayout()
         form_layout1.addRow(author_label, self.author_input)
         form_layout1.addRow(dept_label, dept_layout)
+        form_layout1.addRow(gizmo_label, self.gizmo_name_input) ############
+
+        
+        self.refresh_button = QPushButton("Refresh")
 
         # Version Section (Major and Minor)
         major_label = QLabel("Major:")
@@ -69,18 +79,21 @@ class GizmoSaverUI(QWidget):
         self.disciption_input = QLineEdit()
 
         # Form Layout 2 (Version and Description)
+        vertical_layout2 = QVBoxLayout()
         form_layout2 = QFormLayout()
         form_layout2.addRow(version_layout)
         form_layout2.addRow(disciption_label, self.disciption_input)
+
+        vertical_layout2.addWidget(self.refresh_button)
+        vertical_layout2.addLayout(form_layout2)
 
         # Combine Input Layouts
         combined_input_layout = QHBoxLayout()
         combined_input_layout.addLayout(form_layout1)
         combined_input_layout.addSpacing(20)
-        combined_input_layout.addLayout(form_layout2)
+        combined_input_layout.addLayout(vertical_layout2)
 
         input_main_layout.addLayout(combined_input_layout)
-        input_main_layout.addLayout(gizmo_name_form_layout)
 
         # --------------------------------------create_filepath_format_section----------------------------------------------------
         location_groupbox = QGroupBox("Location")
@@ -134,31 +147,74 @@ class GizmoSaverUI(QWidget):
         self.file_format_output.setAlignment(Qt.AlignCenter)
         self.file_format_output.setStyleSheet("font-size: 20px;")
 
-        display_main_layout.addWidget(self.file_format_output)
-
-        # -----------------------------------------create_save_cancel_section-------------------------------------------------
-        save_cancel_main_layout = QVBoxLayout()
+        self.file_exists_warning = QLabel("Gizmo already Exists in .nuke folder")
 
         self.save_button = QPushButton("Save")
         self.save_button.setMaximumWidth(80)
+
+        file_exists_and_save_hlayout = QHBoxLayout()
+        file_exists_and_save_hlayout.addWidget(self.file_exists_warning)
+        file_exists_and_save_hlayout.addWidget(self.save_button)
+        # file_exists_and_save_hlayout.setAlignment(Qt.AlignRight)
+
+        display_main_layout.addWidget(self.file_format_output)
+        display_main_layout.addLayout(file_exists_and_save_hlayout)
+        
+        # -----------------------------------------save_major_minor_section-------------------------------------------------
+        major_minor_groupbox = QGroupBox("Save Major or Minor Versions")
+        major_minor_groupbox.setStyleSheet(self.groupbox_small_tittle)
+        major_minor_groupbox.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+        major_minor_groupbox.setMinimumHeight(100)
+
+        major_minor_main_layout = QVBoxLayout(major_minor_groupbox)
+
+        # Major widgets
+        major_hlayout = QHBoxLayout()
+        self.major_version_label = QLabel("author1_comp_motionblur_2_0.gizmo")
+
+        self.major_version_save_button = QPushButton("Save Major")
+        self.major_version_save_button.setMaximumWidth(80)
+
+        major_hlayout.addWidget(self.major_version_label)
+        major_hlayout.addWidget(self.major_version_save_button)
+
+        # Minor widgets
+        minor_hlayout = QHBoxLayout()
+        self.minor_version_label = QLabel("author1_comp_motionblur_1_1.gizmo")
+
+        self.minor_version_save_button = QPushButton("Save minor")
+        self.minor_version_save_button.setMaximumWidth(80)
+
+        minor_hlayout.addWidget(self.minor_version_label)
+        minor_hlayout.addWidget(self.minor_version_save_button)
+
+        major_minor_main_layout.addLayout(major_hlayout)
+        major_minor_main_layout.addLayout(minor_hlayout)
+
+        # -----------------------------------------create_cancel_section-------------------------------------------------
+        cancel_groupbox = QGroupBox()
+        cancel_groupbox.setStyleSheet("QGroupBox { border: none; }")
+        cancel_main_layout = QVBoxLayout(cancel_groupbox)
+
+        
         self.cancel_button = QPushButton("Cancel")
         self.cancel_button.setMaximumWidth(80)
 
-        save_cancel_layout = QHBoxLayout()
-        
-        save_cancel_layout.addWidget(self.save_button)
-        save_cancel_layout.addWidget(self.cancel_button)
-        save_cancel_layout.setAlignment(Qt.AlignRight)
+        cancel_layout = QHBoxLayout()
+        cancel_layout.addWidget(self.cancel_button)
+        cancel_layout.setAlignment(Qt.AlignRight)
 
-        save_cancel_main_layout.addLayout(save_cancel_layout)
+        cancel_main_layout.addLayout(cancel_layout)
 
         # ------------------------------------------------------------------------------------------
         self.main_layout = QVBoxLayout(self)
         
+        self.main_layout.addWidget(cvrt_groupbox)
         self.main_layout.addWidget(input_groupbox)
         self.main_layout.addWidget(location_groupbox)
         self.main_layout.addWidget(display_groupbox)
-        self.main_layout.addLayout(save_cancel_main_layout)
+        self.main_layout.addWidget(major_minor_groupbox)
+        self.main_layout.addWidget(cancel_groupbox)
         
     
 if __name__ == "__main__":
