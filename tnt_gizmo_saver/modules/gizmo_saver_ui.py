@@ -1,6 +1,8 @@
 import sys
+import os
 from PySide2.QtCore import Qt
 from PySide2.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QLabel, QLineEdit, QSpinBox, QComboBox, QFormLayout, QPushButton, QSizePolicy, QSpacerItem
+from PySide2.QtWidgets import QFileDialog
 
 class GizmoSaverUI(QWidget):
     def __init__(self):
@@ -8,15 +10,24 @@ class GizmoSaverUI(QWidget):
         self.setWindowTitle("TNT Gizmo Saver")
         self.set_style_sheet()
         self.init_ui()
+        self.signals_and_connections()
 
+    """'''''''''''''''''''''''''''''''setting style sheet foe widgets'''''''''''''''''''''''''''''''"""
     def set_style_sheet(self):
         self.groupbox_small_tittle = """QGroupBox {
         font-size: 12px;
         }
         """
 
+        self.lineedit_background_none = """QLineEdit {
+        background: transparent;
+        border: none
+        }
+        """
+
+    """'''''''''''''''''''''''''''''''create ui elements and layouts'''''''''''''''''''''''''''''''"""
     def init_ui(self):
-        # -------------------------------Convert to group section---------------------------------------------
+        # -------------------------------Convert to group section-------------------------------
         cvrt_groupbox = QGroupBox("")
         cvrt_main_layout = QVBoxLayout(cvrt_groupbox)
         self.cvrt_group_button = QPushButton("Convert to Group")
@@ -24,7 +35,7 @@ class GizmoSaverUI(QWidget):
 
         cvrt_main_layout.addWidget(self.cvrt_group_button, alignment=Qt.AlignCenter)
 
-        # -------------------------------create_input_section---------------------------------------------
+        # -------------------------------create_input_section-------------------------------
         input_groupbox = QGroupBox("Gizmo Input Details")
         input_groupbox.setStyleSheet(self.groupbox_small_tittle)
         input_main_layout = QVBoxLayout(input_groupbox)
@@ -32,6 +43,8 @@ class GizmoSaverUI(QWidget):
         # author input
         author_label = QLabel("Author:")
         self.author_input = QLineEdit()
+        self.author_input.setStyleSheet(self.lineedit_background_none)
+        self.author_input.setReadOnly(True)
         
         # Department input
         dept_label = QLabel("Department:")
@@ -95,7 +108,7 @@ class GizmoSaverUI(QWidget):
 
         input_main_layout.addLayout(combined_input_layout)
 
-        # --------------------------------------create_filepath_format_section----------------------------------------------------
+        # -------------------------------create_filepath_format_section-------------------------------
         location_groupbox = QGroupBox("Location")
         location_groupbox.setStyleSheet(self.groupbox_small_tittle)
         location_groupbox.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
@@ -103,13 +116,13 @@ class GizmoSaverUI(QWidget):
         location_main_layout = QVBoxLayout(location_groupbox)
 
         save_to_label = QLabel("Save To:")
-        self.filepath_input = QLineEdit("C:/Users/author1/.nuke")
+        self.filepath_input = QLineEdit()
 
-        Directory_path_button = QPushButton("...")
-        Directory_path_button.setMaximumWidth(24)
+        self.Directory_path_button = QPushButton("...")
+        self.Directory_path_button.setMaximumWidth(24)
 
-        path_reset_button = QPushButton("r")
-        path_reset_button.setMaximumWidth(24)
+        self.path_reset_button = QPushButton("r")
+        self.path_reset_button.setMaximumWidth(24)
 
         file_format_label = QLabel("File Format:")
         self.file_format_input = QComboBox()
@@ -121,8 +134,8 @@ class GizmoSaverUI(QWidget):
 
         
         directory_reset_button_hlayout = QHBoxLayout()
-        directory_reset_button_hlayout.addWidget(Directory_path_button)
-        directory_reset_button_hlayout.addWidget(path_reset_button)
+        directory_reset_button_hlayout.addWidget(self.Directory_path_button)
+        directory_reset_button_hlayout.addWidget(self.path_reset_button)
 
         directory_reset_button_vlayout = QVBoxLayout()
         directory_reset_button_vlayout.addLayout(directory_reset_button_hlayout)
@@ -135,7 +148,7 @@ class GizmoSaverUI(QWidget):
 
         location_main_layout.addLayout(filepath_format_combine_layout)
 
-        # ---------------------------------------create_gizmo_nameformat_display_section---------------------------------------------------
+        # -------------------------------create_gizmo_nameformat_display_section-------------------------------
         display_groupbox = QGroupBox("Name Format Display")
         display_groupbox.setStyleSheet(self.groupbox_small_tittle)
         display_groupbox.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
@@ -160,7 +173,7 @@ class GizmoSaverUI(QWidget):
         display_main_layout.addWidget(self.file_format_output)
         display_main_layout.addLayout(file_exists_and_save_hlayout)
         
-        # -----------------------------------------save_major_minor_section-------------------------------------------------
+        # -------------------------------save_major_minor_section-------------------------------
         major_minor_groupbox = QGroupBox("Save Major or Minor Versions")
         major_minor_groupbox.setStyleSheet(self.groupbox_small_tittle)
         major_minor_groupbox.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
@@ -191,7 +204,7 @@ class GizmoSaverUI(QWidget):
         major_minor_main_layout.addLayout(major_hlayout)
         major_minor_main_layout.addLayout(minor_hlayout)
 
-        # -----------------------------------------create_cancel_section-------------------------------------------------
+        # -------------------------------create_cancel_section-------------------------------
         cancel_groupbox = QGroupBox()
         cancel_groupbox.setStyleSheet("QGroupBox { border: none; }")
         cancel_main_layout = QVBoxLayout(cancel_groupbox)
@@ -206,7 +219,7 @@ class GizmoSaverUI(QWidget):
 
         cancel_main_layout.addLayout(cancel_layout)
 
-        # ------------------------------------------------------------------------------------------
+        # -------------------------------Add sub layouts to main layouts-------------------------------
         self.main_layout = QVBoxLayout(self)
         
         self.main_layout.addWidget(cvrt_groupbox)
@@ -215,8 +228,55 @@ class GizmoSaverUI(QWidget):
         self.main_layout.addWidget(display_groupbox)
         self.main_layout.addWidget(major_minor_groupbox)
         self.main_layout.addWidget(cancel_groupbox)
-        
+
+    """'''''''''''''''''''''''''''''''signals_and_connections'''''''''''''''''''''''''''''''"""
+    def signals_and_connections(self):
+        """signals and connections for ui"""
+        # author - system user name connection 
+        self.author_input.setText(self.get_system_user())
+
+        # save to - nuke default directoty connection
+        self.filepath_input.setText(self.get_default_nuke_directory())
+        self.Directory_path_button.clicked.connect(self.browse_folder)
+
+        self.path_reset_button.clicked.connect(self.reset_folder_path)
+
+
+    """'''''''''''''''''''''''''''''''get_system_user'''''''''''''''''''''''''''''''"""
+    @staticmethod
+    def get_system_user():
+        """Retrieve the system's current username"""
+        username = os.getenv("USERNAME") or os.getenv("USER") or "Unknown"
+        return username
     
+    """'''''''''''''''''''''''''''''''get_default_nuke_directory'''''''''''''''''''''''''''''''"""
+    @staticmethod
+    def get_default_nuke_directory():
+        """Returns the default .nuke directory"""
+        user_home_directory = os.path.expanduser("~")
+        nuke_directory = os.path.join(user_home_directory, ".nuke")
+        return nuke_directory
+    
+    """'''''''''''''''''''''''''''''''browse_folder'''''''''''''''''''''''''''''''"""
+    def browse_folder(self):
+        """Open a folder browser dialog and update the current folder path"""
+
+        current_path = self.filepath_input.text()
+
+        if not os.path.isdir(current_path):
+            current_path = self.get_default_nuke_directory()
+
+        folder_path = QFileDialog.getExistingDirectory(self, "Select Save Directory", current_path)
+
+        if folder_path:
+            self.filepath_input.setText(folder_path)
+
+    """'''''''''''''''''''''''''''''''reset_folder_path'''''''''''''''''''''''''''''''"""
+    def reset_folder_path(self):
+        """Reset the folder path to the default .nuke directory."""
+        default_path = self.get_default_nuke_directory()
+        self.filepath_input.setText(default_path)
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = GizmoSaverUI()

@@ -32,7 +32,7 @@ def open_nuke_directory(directory):
             
     except Exception as e:
         nuke.message(f"Failed to open the directory: {str(e)}")
-        
+
 
 get_current_username()
 get_nuke_directory()
