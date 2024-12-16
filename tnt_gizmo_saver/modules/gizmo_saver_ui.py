@@ -3,6 +3,7 @@ import os
 from PySide2.QtCore import Qt
 from PySide2.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QLabel, QLineEdit, QSpinBox, QComboBox, QFormLayout, QPushButton, QSizePolicy, QSpacerItem
 from PySide2.QtWidgets import QFileDialog
+from PySide2.QtGui import QFont
 
 class GizmoSaverUI(QWidget):
     def __init__(self):
@@ -14,9 +15,9 @@ class GizmoSaverUI(QWidget):
 
     """'''''''''''''''''''''''''''''''setting style sheet foe widgets'''''''''''''''''''''''''''''''"""
     def set_style_sheet(self):
-        self.groupbox_small_tittle = """QGroupBox {
-        font-size: 12px;
-        }
+        self.groupbox_small_tittle = """QGroupBox::title {
+            font-size: 50%;
+            }
         """
 
         self.lineedit_background_none = """QLineEdit {
@@ -24,6 +25,13 @@ class GizmoSaverUI(QWidget):
         border: none
         }
         """
+
+        self.label_small_red_text = """QLabel {
+            font-size: 30%; 
+            color: red; 
+            }
+        """
+
 
     """'''''''''''''''''''''''''''''''create ui elements and layouts'''''''''''''''''''''''''''''''"""
     def init_ui(self):
@@ -55,8 +63,10 @@ class GizmoSaverUI(QWidget):
         self.add_dept_button.setMaximumWidth(24)
 
         dept_layout = QHBoxLayout()
-        dept_layout.addWidget(self.dept_input)
-        dept_layout.addWidget(self.add_dept_button)
+        dept_layout.addWidget(self.dept_input, stretch=1)
+        dept_layout.addWidget(self.add_dept_button, stretch=0)
+
+        dept_layout.setAlignment(Qt.AlignRight)
 
         # Gizmo name
         gizmo_label = QLabel("Gizmo Name:")
@@ -66,7 +76,7 @@ class GizmoSaverUI(QWidget):
         form_layout1 = QFormLayout()
         form_layout1.addRow(author_label, self.author_input)
         form_layout1.addRow(dept_label, dept_layout)
-        form_layout1.addRow(gizmo_label, self.gizmo_name_input) ############
+        form_layout1.addRow(gizmo_label, self.gizmo_name_input)
 
         
         self.refresh_button = QPushButton("Refresh")
@@ -139,7 +149,7 @@ class GizmoSaverUI(QWidget):
 
         directory_reset_button_vlayout = QVBoxLayout()
         directory_reset_button_vlayout.addLayout(directory_reset_button_hlayout)
-        directory_reset_button_vlayout.addWidget(QLabel(""))
+        directory_reset_button_vlayout.setAlignment(Qt.AlignTop)
 
         # Combine File Path Buttons with File Path Input
         filepath_format_combine_layout = QHBoxLayout()
@@ -152,15 +162,20 @@ class GizmoSaverUI(QWidget):
         display_groupbox = QGroupBox("Name Format Display")
         display_groupbox.setStyleSheet(self.groupbox_small_tittle)
         display_groupbox.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-        display_groupbox.setMinimumHeight(100)
+        display_groupbox.setMinimumHeight(140)
 
         display_main_layout = QVBoxLayout(display_groupbox)
 
         self.file_format_output = QLabel("author1_comp_motionblur_1_0_beta.gizmo")
         self.file_format_output.setAlignment(Qt.AlignCenter)
-        self.file_format_output.setStyleSheet("font-size: 20px;")
+
+        # setting up font size twice bigger than the acual size
+        font = self.file_format_output.font()
+        font.setPointSize(font.pointSize() * 2)
+        self.file_format_output.setFont(font)
 
         self.file_exists_warning = QLabel("Gizmo already Exists in .nuke folder")
+        self.file_exists_warning.setStyleSheet(self.label_small_red_text)
 
         self.save_button = QPushButton("Save")
         self.save_button.setMaximumWidth(80)
