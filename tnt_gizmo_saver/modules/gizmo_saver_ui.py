@@ -15,9 +15,10 @@ class GizmoSaverUI(QWidget):
 
     """'''''''''''''''''''''''''''''''setting style sheet foe widgets'''''''''''''''''''''''''''''''"""
     def set_style_sheet(self):
-        self.groupbox_small_tittle = """QGroupBox::title {
-            font-size: 50%;
-            }
+        self.groupbox_small_tittle = """QGroupBox
+        {
+        font-size: 10px;
+        }
         """
 
         self.lineedit_background_none = """QLineEdit {
@@ -29,6 +30,11 @@ class GizmoSaverUI(QWidget):
         self.label_small_red_text = """QLabel {
             font-size: 30%; 
             color: red; 
+            }
+        """
+
+        self.display_label_big_text = """QLabel {
+            font-size: 18px; 
             }
         """
 
@@ -168,11 +174,7 @@ class GizmoSaverUI(QWidget):
 
         self.file_format_output = QLabel("author1_comp_motionblur_1_0_beta.gizmo")
         self.file_format_output.setAlignment(Qt.AlignCenter)
-
-        # setting up font size twice bigger than the acual size
-        font = self.file_format_output.font()
-        font.setPointSize(font.pointSize() * 2)
-        self.file_format_output.setFont(font)
+        self.file_format_output.setStyleSheet(self.display_label_big_text)
 
         self.file_exists_warning = QLabel("Gizmo already Exists in .nuke folder")
         self.file_exists_warning.setStyleSheet(self.label_small_red_text)
