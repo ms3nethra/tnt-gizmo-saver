@@ -1,13 +1,62 @@
 import sys
 import os
 import re
+import getpass
 
+"""'''''''''''''''''''''''''''''''getting_default_nuke_directory'''''''''''''''''''''''''''''''"""
 def get_default_nuke_directory():
     """ Returns the default .nuke directory. """
     user_home_directory = os.path.expanduser("~")
     nuke_directory = os.path.join(user_home_directory, ".nuke")
     return nuke_directory
 
+"""'''''''''''''''''''''''''''''''getting_system_user'''''''''''''''''''''''''''''''"""
+def get_system_user():
+    """Fetch the current system user as the author."""
+    return getpass.getuser()
+
+"""'''''''''''''''''''''''''''''''extracting_group_node_name_details'''''''''''''''''''''''''''''''"""
+def extract_group_node_details(group_name):
+    """
+    Extract author, department, gizmo name, major, and minor versions from a group node name.
+    """
+    pattern = re.compile(
+        r"^(?P<author>[a-zA-Z0-9]+)[_\-.]"
+        r"(?P<department>[a-zA-Z0-9]+)[_\-.]"
+        r"(?P<gizmo_name>[a-zA-Z0-9]+)[_\-.]"
+        r"(?P<major>\d+)[_\-.]"
+        r"(?P<minor>\d+)_group\d+$"
+    )
+
+    match = pattern.match(group_name)
+    if match:
+        return match.groupdict()
+    return None
+
+"""'''''''''''''''''''''''''''''''finding_latest_gizmo_file'''''''''''''''''''''''''''''''"""
+def find_latest_gizmo_file(directory, department, gizmo_name):
+    """
+    Find the latest gizmo file matching the department and gizmo name in the directory.
+    """
+    latest_file = None
+    latest_major = 1
+    latest_minor = 0
+
+    for file in os.listdir(directory):
+        if file.endswith(".gizmo"):
+            details = extract_gizmo_details(file)
+            if details and details["department"] == department and details["gizmo_name"] == gizmo_name:
+                major = int(details["major"])
+                minor = int(details["minor"])
+
+                if (major > latest_major) or (major == latest_minor and minor > latest_minor):
+                    latest_file = file
+                    latest_major = major
+                    latest_minor = minor
+    
+    return latest_file, latest_major, latest_minor
+
+"""'''''''''''''''''''''''''''''''extracting name details from gizmo'''''''''''''''''''''''''''''''"""
 def extract_gizmo_details(file_name):
     """
     Extract details from gizmo file name, such as author, departmernt,
@@ -26,64 +75,20 @@ def extract_gizmo_details(file_name):
         return file_match.groupdict()
     return None
 
-def determine_file_format(file_name):
-    """
-    Determine the file format used in the gizmo file name.
-    """
-    for format in ["_", "-", "."]:
-        if format in file_name:
-            return format
-    return None
-
-def find_gizmo_files(directory):
-    """
-    
-    """
-    gizmo_files = []
-    for file in os.listdir(directory):
-        if file.endswith(".gizmo"):
-            extracted_details = extract_gizmo_details(file)
-            if extracted_details:
-                extracted_details["file_format"] = determine_file_format(file)
-                gizmo_files.append(extracted_details)
-
-    return gizmo_files
-
 if __name__ == "__main__":
     nuke_dir = get_default_nuke_directory()
-    print(f"[DEBUG] Checking for gizmo files in directory: {nuke_dir}")
+    # print(f"[DEBUG] Checking for gizmo files in directory: {nuke_dir}")
 
     #Debugging extract_gizmo_details function
-    test_file = "thri_comp_renderTool_1.0.gizmo"
+    test_file = "thrinethra_comp_motionblur_1_0.gizmo"
     details = extract_gizmo_details(test_file)
     print(f"[DEBUG] Extracted details: {details}")
+    department = details["department"]
+    
+    print(department)
+    # latest_versions = find_latest_gizmo_file()
 
-    # Debugging determine_file_format function
-    file_format = determine_file_format(test_file)
-    print(f"[DEBUG] Detected file format: {format}")
-    print(type(format))
 
-    # Debugging find_gizmo_files function
-    test_directory = nuke_dir  # Change to an appropriate test directory
-    gizmo_files = find_gizmo_files(test_directory)
 
-    print(f"[DEBUG] Total gizmo files found: {len(gizmo_files)}")
 
-    # if os.path.exists(nuke_dir):
-    #     gizmo_files = find_gizmo_files(nuke_dir)
 
-    #     if gizmo_files:
-    #         print("\nFound Gizmo Files:")
-    #         for gizmo in gizmo_files:
-    #             print(f"\nGizmo Details:")
-    #             print(f"  Author: {gizmo['author']}")
-    #             print(f"  Department: {gizmo['department']}")
-    #             print(f"  Gizmo Name: {gizmo['gizmo_name']}")
-    #             print(f"  Major Version: {gizmo['major']}")
-    #             print(f"  Minor Version: {gizmo['minor']}")
-    #             print(f"  File Format: {gizmo['file_format']}")
-    #     else:
-    #         print("No valid gizmo files found in the directory.")
-
-    # else:
-    #     print(f"Directory does not exist: {nuke_dir}")

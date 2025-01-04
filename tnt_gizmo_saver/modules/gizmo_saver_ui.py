@@ -1,5 +1,8 @@
 import sys
 import os
+import nuke
+import re
+import getpass
 from PySide2.QtCore import Qt
 from PySide2.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QLabel, QLineEdit, QSpinBox, QComboBox, QFormLayout, QPushButton, QSizePolicy, QSpacerItem
 from PySide2.QtWidgets import QFileDialog
@@ -249,15 +252,157 @@ class GizmoSaverUI(QWidget):
     """'''''''''''''''''''''''''''''''signals_and_connections'''''''''''''''''''''''''''''''"""
     def signals_and_connections(self):
         """signals and connections for ui"""
-        # author - system user name connection 
+        self.cvrt_group_button.clicked.connect(self.convert_to_group)
+
+        self.refresh_button.clicked.connect(self.refresh_input_details)
+
         self.author_input.setText(self.get_system_user())
 
-        # save to - nuke default directoty connection
         self.filepath_input.setText(self.get_default_nuke_directory())
         self.Directory_path_button.clicked.connect(self.browse_folder)
 
         self.path_reset_button.clicked.connect(self.reset_folder_path)
 
+    """'''''''''''''''''''''''''''''''convert_to_group'''''''''''''''''''''''''''''''"""
+    def convert_to_group(self):
+        """Converts the selected gizmo node to a Group node."""
+        try:
+            selected_node = nuke.selectedNode()
+
+            if not isinstance(selected_node, nuke.Gizmo):
+                nuke.message("The selected node is not a Gizmo.")
+                return
+            
+            gizmo_class_name = selected_node.Class()
+            gizmo_unique_name = self.generate_unique_name(gizmo_class_name)
+
+            group_node = selected_node.makeGroup()
+
+            group_node.setSelected(True)
+
+            group_node.knob("name").setValue(gizmo_unique_name)
+            
+            group_name = group_node.knob("name").value()
+            self.get_details_from_group_node(group_name)
+            nuke.message(f"Gizmo successfully converted to Group: {group_name}")
+
+        except Exception as e:
+            nuke.message(f"Error converting Gizmo to Group: {e}")
+
+    """'''''''''''''''''''''''''''''''generate_unique_name for convert group'''''''''''''''''''''''''''''''"""
+    def generate_unique_name(self, base_name):
+        """Generates a unique name by appending _groupX, X is a numbe"""
+        index = 1
+        unique_name = f"{base_name}_group{index}"
+        while nuke.toNode(unique_name):
+            index += 1
+            unique_name = f"{base_name}_group{index}"
+
+        return unique_name
+
+    """'''''''''''''''''''''''''''''''extracting_group_node_name_details'''''''''''''''''''''''''''''''"""
+    def extract_group_node_details(self, group_name):
+        """
+        Extract author, department, gizmo name, major, and minor versions from a group node name.
+        """
+        pattern = re.compile(
+            r"^(?P<author>[a-zA-Z0-9]+)[_\-.]"
+            r"(?P<department>[a-zA-Z0-9]+)[_\-.]"
+            r"(?P<gizmo_name>[a-zA-Z0-9]+)[_\-.]"
+            r"(?P<major>\d+)[_\-.]"
+            r"(?P<minor>\d+)_group\d+$"
+        )
+
+        match = pattern.match(group_name)
+        if match:
+            return match.groupdict()
+        return None
+
+    """'''''''''''''''''''''''''''''''finding_latest_gizmo_file'''''''''''''''''''''''''''''''"""
+    def find_latest_gizmo_file(self, directory, department, gizmo_name):
+        """
+        Find the latest gizmo file matching the department and gizmo name in the directory.
+        """
+        latest_file = None
+        latest_major = 1
+        latest_minor = 0
+        try:
+            for file in os.listdir(directory):
+                if file.endswith(".gizmo"):
+                    details = extract_gizmo_details(file)
+                    if details and details["department"] == department and details["gizmo_name"] == gizmo_name:
+                        major = int(details["major"])
+                        minor = int(details["minor"])
+
+                        if (major > latest_major) or (major == latest_minor and minor > latest_minor):
+                            latest_file = file
+                            latest_major = major
+                            latest_minor = minor
+        
+        except Exception as e:
+            nuke.message(f"Error finding latest gizmo file: {e}")
+
+        return latest_file, latest_major, latest_minor
+
+    """'''''''''''''''''''''''''''''''extracting name details from gizmo'''''''''''''''''''''''''''''''"""
+    def extract_gizmo_details(self, file_name):
+        """
+        Extract details from gizmo file name, such as author, departmernt,
+        gizmo name, major and minor virsion.
+        """
+        pattern = re.compile(
+            r"^(?P<author>[a-zA-Z0-9]+)[_\-\.]"
+            r"(?P<department>[a-zA-Z0-9]+)[_\-\.]"
+            r"(?P<gizmo_name>[a-zA-Z0-9]+)[_\-\.]"
+            r"(?P<major>\d+)[_\-\.]"
+            r"(?P<minor>\d+)\.gizmo$"
+        )
+
+        file_match = pattern.match(file_name)
+        if file_match:
+            return file_match.groupdict()
+        return None
+
+
+    """'''''''''''''''''''''''''''''''get_details_from_group_node'''''''''''''''''''''''''''''''"""
+    def get_details_from_group_node(self, group_name):
+        """Get and assign the UI fields from the selected Group node."""
+        try:
+            details = self.extract_group_node_details(group_name)
+            if not details:
+                nuke.message("Invalid group name format.")
+                return
+
+            self.author_input.setText(details["author"])
+            self.dept_input.setCurrentText(details["department"])
+            self.gizmo_name_input.setText(details["gizmo_name"])
+
+            self.major_version_input.setValue(int(details["major"]))
+            self.minor_version_input.setValue(int(details["minor"]))
+
+            # Find latest gizmo version
+            direcory = self.get_default_nuke_directory()
+            department = details["department"]
+            gizmo_name = details["gizmo_name"]
+            latest_file, latest_major, latest_minor = self.find_latest_gizmo_file(direcory, department, gizmo_name)
+
+            self.file_format_output.setText(latest_file or "No existing file.")
+            self.major_version_input.setValue(latest_major)
+            self.minor_version_input.setValue(latest_minor)
+
+        except Exception as e:
+            nuke.message(f"Error getting details from group node: {e}")
+
+    """'''''''''''''''''''''''''''''''refresh_input_details'''''''''''''''''''''''''''''''"""
+    def refresh_input_details(self):
+        """Refresh the input details based on the currently selected Group node."""
+        try:
+            selected_node = nuke.selectedNode()
+            group_name = selected_node.knob("name").value()
+            self.get_details_from_group_node(group_name)
+
+        except Exception as e:
+            nuke.message(f"Error refreshing UI: {e}")
 
     """'''''''''''''''''''''''''''''''get_system_user'''''''''''''''''''''''''''''''"""
     @staticmethod
@@ -273,6 +418,7 @@ class GizmoSaverUI(QWidget):
         user_home_directory = os.path.expanduser("~")
         nuke_directory = os.path.join(user_home_directory, ".nuke")
         return nuke_directory
+        
     
     """'''''''''''''''''''''''''''''''browse_folder'''''''''''''''''''''''''''''''"""
     def browse_folder(self):
