@@ -19,11 +19,16 @@ class MajorMinorDialog(QDialog):
     def __init__(self, major_filename, minor_filename, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Save Major or Minor Versions")
+        self.setMinimumSize(460, 120)
 
         self.major_filename = major_filename
         self.minor_filename = minor_filename
 
-        major_minor_main_layout = QVBoxLayout(self)
+        main_layout = QVBoxLayout(self)
+
+        major_minor_groupbox = QGroupBox("")
+
+        major_minor_main_layout = QVBoxLayout(major_minor_groupbox)
 
         # Major widgets
         major_hlayout = QHBoxLayout()
@@ -33,6 +38,8 @@ class MajorMinorDialog(QDialog):
         major_hlayout.addWidget(self.major_version_label)
         major_hlayout.addWidget(self.major_version_save_button)
 
+        major_minor_main_layout.addLayout(major_hlayout)
+
         # Minor widgets
         minor_hlayout = QHBoxLayout()
         self.minor_version_label = QLabel(self.minor_filename)
@@ -41,8 +48,9 @@ class MajorMinorDialog(QDialog):
         minor_hlayout.addWidget(self.minor_version_label)
         minor_hlayout.addWidget(self.minor_version_save_button)
 
-        major_minor_main_layout.addLayout(major_hlayout)
         major_minor_main_layout.addLayout(minor_hlayout)
+
+        main_layout.addWidget(major_minor_groupbox)
 
         self.major_version_save_button.clicked.connect(self.on_save_major)
         self.minor_version_save_button.clicked.connect(self.on_save_minor)
@@ -227,8 +235,10 @@ class GizmoSaverUI(QWidget):
             "author-dept-asset-major-minor-description",
             "author.dept.asset.major.minor.description"
         ])
+        self.file_format_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
         filepath_format_layout = QFormLayout()
+        filepath_format_layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
         filepath_format_layout.addRow(save_to_label, self.filepath_input)
         filepath_format_layout.addRow(file_format_label, self.file_format_input)
 
