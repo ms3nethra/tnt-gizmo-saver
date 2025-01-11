@@ -7,10 +7,11 @@ from PySide2.QtCore import Qt
 from PySide2.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
     QGroupBox, QLabel, QLineEdit, QSpinBox, QComboBox, QFormLayout, 
-    QPushButton, QSizePolicy, QDialog
+    QPushButton, QSizePolicy, QDialog, QListWidget, QListWidgetItem
 )
 from PySide2.QtWidgets import QFileDialog
 from PySide2.QtGui import QFont
+import json
 
 # -----------------------------------------------------------------------
 # Major and Minor Qdialog ui
@@ -87,6 +88,154 @@ class MajorMinorDialog(QDialog):
         self.accept()
 
 # -----------------------------------------------------------------------
+# Add Departments to department combo box
+# -----------------------------------------------------------------------
+class add_department_ui(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Add Departments")
+
+        # Adjust these paths as needed
+        self.json_file_path = os.path.join(os.path.dirname(__file__), "departments.json")
+
+        self.default_departments = ["comp", "roto", "key"]
+
+        self.departments = [] 
+
+        self.load_departments()
+        self.setup_ui()
+        self.connect_signals()
+
+    def setup_ui(self):
+        main_layout = QVBoxLayout(self)
+
+        departments_label = QLabel("Departments:")
+
+        self.departments_list = QListWidget()
+        self.populate_departments()
+
+        self.add_button = QPushButton("+")
+        self.remove_button = QPushButton("-")
+
+        self.move_up_button = QPushButton("˄")
+        self.move_down_button = QPushButton("˅")
+
+        self.accept_button = QPushButton("Accept")
+        self.cancel_button = QPushButton("Cancel")
+
+        main_layout.addWidget(departments_label)
+        main_layout.addWidget(self.departments_list)
+
+        add_remove_button_layout = QHBoxLayout()
+        add_remove_button_layout.addWidget(self.add_button)
+        add_remove_button_layout.addWidget(self.remove_button)
+
+        move_button_layout = QHBoxLayout()
+        move_button_layout.addWidget(self.move_up_button)
+        move_button_layout.addWidget(self.move_down_button)
+
+        add_remove_move_layout = QHBoxLayout()
+        add_remove_move_layout.addLayout(add_remove_button_layout)
+        add_remove_move_layout.addLayout(move_button_layout)
+
+        main_layout.addLayout(add_remove_move_layout)
+
+        accept_cancel_layout = QHBoxLayout()
+        accept_cancel_layout.addWidget(self.accept_button)
+        accept_cancel_layout.addWidget(self.cancel_button)
+
+        main_layout.addLayout(accept_cancel_layout)
+
+    def connect_signals(self):
+        self.add_button.clicked.connect(self.add_department)
+        self.remove_button.clicked.connect(self.remove_department)
+
+        self.move_up_button.clicked.connect(self.move_up_department)
+        self.move_down_button.clicked.connect(self.move_down_department)
+
+        self.accept_button.clicked.connect(self.accept_changes)
+        self.cancel_button.clicked.connect(self.close_window)
+
+    def load_departments(self):
+        loaded = []
+        try:
+            with open(self.json_file_path, "r") as f:
+                loaded = json.load(f)
+
+        except FileNotFoundError:
+            pass
+
+        combined = list(self.default_departments)
+        for dept in loaded:
+            if dept not in combined:
+                combined.append(dept)
+
+        self.departments = combined
+
+    def save_departments(self):
+        with open(self.json_file_path, "w") as f:
+            json.dump(self.departments, f, indent=4)
+
+    def populate_departments(self):
+        self.departments_list.clear()
+
+        for dept in self.departments:
+            item = QListWidgetItem(dept)
+
+            if dept in self.default_departments:
+                # Make it non-editable
+                # Remove the editable flag from the item
+                flags = item.flags()
+                flags &= ~Qt.ItemIsEditable
+                item.setFlags(flags)
+            else:
+                # Make user items editable
+                item.setFlags(item.flags() | Qt.ItemIsEditable)
+
+            self.departments_list.addItem(item)
+
+    def add_department(self):
+        new_item = QListWidgetItem("department")
+        new_item.setFlags(new_item.flags() | Qt.ItemIsEditable)
+        self.departments_list.addItem(new_item)
+
+        row_count = self.departments_list.count()
+        self.departments_list.setCurrentRow(row_count - 1)
+
+    def remove_department(self):
+        selected_items = self.departments_list.selectedItems()
+        for item in selected_items:
+            if item.text() in self.default_departments:
+                nuke.message(f"Cannot remove default department: {item.text()}")
+                continue
+            self.departments_list.takeItem(self.departments_list.row(item))
+
+    def move_up_department(self):
+        current_row = self.departments_list.currentRow()
+        if current_row > 0:
+            current_item = self.departments_list.takeItem(current_row)
+            self.departments_list.insertItem(current_row - 1, current_item)
+            self.departments_list.setCurrentRow(current_row - 1)
+
+    def move_down_department(self):
+        current_row = self.departments_list.currentRow()
+        if current_row < self.departments_list.count() - 1:
+            current_item = self.departments_list.takeItem(current_row)
+            self.departments_list.insertItem(current_row + 1, current_item)
+            self.departments_list.setCurrentRow(current_row + 1)
+
+    def accept_changes(self):
+        self.departments.clear()
+        for i in range(self.departments_list.count()):
+            self.departments.append(self.departments_list.item(i).text())
+
+        self.save_departments()
+        self.close()
+
+    def close_window(self):
+        self.close()
+
+# -----------------------------------------------------------------------
 # Gizmo Saver Main UI
 # -----------------------------------------------------------------------
 class GizmoSaverUI(QWidget):
@@ -96,6 +245,7 @@ class GizmoSaverUI(QWidget):
         self.set_style_sheet()
         self.init_ui()
         self.signals_and_connections()
+        self.load_departments_into_combo()
         self.refresh_file_format_display()
 
     """'''''''''''''''''''''''''''''''setting style sheet foe widgets'''''''''''''''''''''''''''''''"""
@@ -148,7 +298,6 @@ class GizmoSaverUI(QWidget):
         # Department input
         dept_label = QLabel("Department:")
         self.dept_input = QComboBox()
-        self.dept_input.addItems(["comp", "lighting", "fx", "animation"])
 
         self.add_dept_button = QPushButton("+")
         self.add_dept_button.setMaximumWidth(24)
@@ -311,7 +460,7 @@ class GizmoSaverUI(QWidget):
     """'''''''''''''''''''''''''''''''signals_and_connections'''''''''''''''''''''''''''''''"""
     def signals_and_connections(self):
         """signals and connections for ui"""
-
+        self.add_dept_button.clicked.connect(self.on_add_dept_button_clicked)
         self.filepath_input.textChanged.connect(self.refresh_file_format_display)
 
         # Whenever the user edits these widgets, re‐compute the filename:
@@ -387,6 +536,32 @@ class GizmoSaverUI(QWidget):
             base_name = f"{match.group(1)}_{match.group(2)}_{match.group(3)}"
             return base_name
         return name
+    
+    """'''''''''''''''''''''''''''''''load_departments_into_combo box'''''''''''''''''''''''''''''''"""
+    def load_departments_into_combo(self):
+        json_path = os.path.join(os.path.dirname(__file__), "departments.json")
+        default_departments = ["comp", "roto", "key"]
+
+        final_depts = list(default_departments)
+
+        try:
+            with open(json_path, "r") as f:
+                user_depts = json.load(f)
+                for dep in user_depts:
+                    if dep not in final_depts:
+                        final_depts.append(dep)
+        except FileNotFoundError:
+            pass
+
+        self.dept_input.clear()
+        self.dept_input.addItems(final_depts)
+
+    """'''''''''''''''''''''''''''''''on_add_dept_button_clicked'''''''''''''''''''''''''''''''"""
+    def on_add_dept_button_clicked(self):
+        dialog = add_department_ui(parent=self)
+        dialog.exec_()
+
+        self.load_departments_into_combo()
 
     """'''''''''''''''''''''''''''''''extracting_group_node_name_details'''''''''''''''''''''''''''''''"""
     def extract_group_node_details(self, group_name):
