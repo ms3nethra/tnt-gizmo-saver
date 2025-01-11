@@ -246,6 +246,7 @@ class GizmoSaverUI(QWidget):
         self.init_ui()
         self.signals_and_connections()
         self.load_departments_into_combo()
+        self.refresh_input_details_if_group_selected()
         self.refresh_file_format_display()
 
     """'''''''''''''''''''''''''''''''setting style sheet foe widgets'''''''''''''''''''''''''''''''"""
@@ -748,6 +749,19 @@ class GizmoSaverUI(QWidget):
 
         except Exception as e:
             nuke.message(f"Error refreshing UI: {e}")
+
+    """'''''''''''''''''''''''''''''''refresh_input_details_if_group_selected'''''''''''''''''''''''''''''''"""
+    def refresh_input_details_if_group_selected(self):
+        try:
+            selected_nodes = nuke.selectedNodes()
+
+            if len(selected_nodes) == 1 and selected_nodes[0].Class() == "Group":
+                group_node = selected_nodes[0]
+                group_name = group_node.knob("name").value()
+                self.get_details_from_group_node(group_name)
+
+        except Exception as e:
+            nuke.message(f"Error checking selected Group node: {e}")
 
     """''''''''''''''''''''''''''''''' on_save_clicked logic '''''''''''''''''''''''''''''"""
     def on_save_clicked(self):
