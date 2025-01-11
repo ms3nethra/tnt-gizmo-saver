@@ -4,10 +4,83 @@ import nuke
 import re
 import getpass
 from PySide2.QtCore import Qt
-from PySide2.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QLabel, QLineEdit, QSpinBox, QComboBox, QFormLayout, QPushButton, QSizePolicy, QSpacerItem
+from PySide2.QtWidgets import (
+    QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
+    QGroupBox, QLabel, QLineEdit, QSpinBox, QComboBox, QFormLayout, 
+    QPushButton, QSizePolicy, QDialog
+)
 from PySide2.QtWidgets import QFileDialog
 from PySide2.QtGui import QFont
 
+# -----------------------------------------------------------------------
+# Major and Minor Qdialog ui
+# -----------------------------------------------------------------------
+class MajorMinorDialog(QDialog):
+    def __init__(self, major_filename, minor_filename, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Save Major or Minor Versions")
+
+        self.major_filename = major_filename
+        self.minor_filename = minor_filename
+
+        major_minor_main_layout = QVBoxLayout(self)
+
+        # Major widgets
+        major_hlayout = QHBoxLayout()
+        self.major_version_label = QLabel(self.major_filename)
+        self.major_version_save_button = QPushButton("Save Major")
+        self.major_version_save_button.setMaximumWidth(80)
+        major_hlayout.addWidget(self.major_version_label)
+        major_hlayout.addWidget(self.major_version_save_button)
+
+        # Minor widgets
+        minor_hlayout = QHBoxLayout()
+        self.minor_version_label = QLabel(self.minor_filename)
+        self.minor_version_save_button = QPushButton("Save minor")
+        self.minor_version_save_button.setMaximumWidth(80)
+        minor_hlayout.addWidget(self.minor_version_label)
+        minor_hlayout.addWidget(self.minor_version_save_button)
+
+        major_minor_main_layout.addLayout(major_hlayout)
+        major_minor_main_layout.addLayout(minor_hlayout)
+
+        self.major_version_save_button.clicked.connect(self.on_save_major)
+        self.minor_version_save_button.clicked.connect(self.on_save_minor)
+
+    def on_save_major(self):
+        self.save_group_as_gizmo_dialog(self.major_filename)
+
+    def on_save_minor(self):
+        self.save_group_as_gizmo_dialog(self.minor_filename)
+
+    def save_group_as_gizmo_dialog(self, gizmo_filename):
+        try:
+            parent_ui = self.parent()
+            if not parent_ui:
+                nuke.message("Error: missing parent UI.")
+                return
+
+            directory = parent_ui.filepath_input.text().strip()
+            if not os.path.isdir(directory):
+                directory = parent_ui.get_default_nuke_directory()
+
+            full_path = os.path.join(directory, gizmo_filename)
+
+            selected_node = nuke.selectedNode()
+            if not isinstance(selected_node, nuke.Group):
+                nuke.message("Please select a Group node to save.")
+                return
+
+            parent_ui.export_group_as_gizmo(selected_node, full_path)
+
+        except Exception as e:
+            nuke.message(f"Error saving major/minor:\n{e}")
+
+        self.accept()
+
+# -----------------------------------------------------------------------
+# Gizmo Saver Main UI
+# -----------------------------------------------------------------------
 class GizmoSaverUI(QWidget):
     def __init__(self):
         super().__init__()
@@ -15,6 +88,7 @@ class GizmoSaverUI(QWidget):
         self.set_style_sheet()
         self.init_ui()
         self.signals_and_connections()
+        self.refresh_file_format_display()
 
     """'''''''''''''''''''''''''''''''setting style sheet foe widgets'''''''''''''''''''''''''''''''"""
     def set_style_sheet(self):
@@ -80,6 +154,7 @@ class GizmoSaverUI(QWidget):
         # Gizmo name
         gizmo_label = QLabel("Gizmo Name:")
         self.gizmo_name_input = QLineEdit()
+        self.gizmo_name_input.setPlaceholderText("gizmoname")
 
         # Form Layouts 1 (Author, Department, Gizmo Name)
         form_layout1 = QFormLayout()
@@ -93,8 +168,10 @@ class GizmoSaverUI(QWidget):
         # Version Section (Major and Minor)
         major_label = QLabel("Major:")
         self.major_version_input = QSpinBox()
+        self.major_version_input.setValue(1)
         minor_label = QLabel("Minor:")
         self.minor_version_input = QSpinBox()
+        self.minor_version_input.setValue(0)
 
         major_form_layout = QFormLayout()
         major_form_layout.addRow(major_label, self.major_version_input)
@@ -145,7 +222,11 @@ class GizmoSaverUI(QWidget):
 
         file_format_label = QLabel("File Format:")
         self.file_format_input = QComboBox()
-        self.file_format_input.addItems(["_", "-", "."])
+        self.file_format_input.addItems([
+            "author_dept_asset_major_minor_description",
+            "author-dept-asset-major-minor-description",
+            "author.dept.asset.major.minor.description"
+        ])
 
         filepath_format_layout = QFormLayout()
         filepath_format_layout.addRow(save_to_label, self.filepath_input)
@@ -192,37 +273,6 @@ class GizmoSaverUI(QWidget):
 
         display_main_layout.addWidget(self.file_format_output)
         display_main_layout.addLayout(file_exists_and_save_hlayout)
-        
-        # -------------------------------save_major_minor_section-------------------------------
-        major_minor_groupbox = QGroupBox("Save Major or Minor Versions")
-        major_minor_groupbox.setStyleSheet(self.groupbox_small_tittle)
-        major_minor_groupbox.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-        major_minor_groupbox.setMinimumHeight(100)
-
-        major_minor_main_layout = QVBoxLayout(major_minor_groupbox)
-
-        # Major widgets
-        major_hlayout = QHBoxLayout()
-        self.major_version_label = QLabel("author1_comp_motionblur_2_0.gizmo")
-
-        self.major_version_save_button = QPushButton("Save Major")
-        self.major_version_save_button.setMaximumWidth(80)
-
-        major_hlayout.addWidget(self.major_version_label)
-        major_hlayout.addWidget(self.major_version_save_button)
-
-        # Minor widgets
-        minor_hlayout = QHBoxLayout()
-        self.minor_version_label = QLabel("author1_comp_motionblur_1_1.gizmo")
-
-        self.minor_version_save_button = QPushButton("Save minor")
-        self.minor_version_save_button.setMaximumWidth(80)
-
-        minor_hlayout.addWidget(self.minor_version_label)
-        minor_hlayout.addWidget(self.minor_version_save_button)
-
-        major_minor_main_layout.addLayout(major_hlayout)
-        major_minor_main_layout.addLayout(minor_hlayout)
 
         # -------------------------------create_cancel_section-------------------------------
         cancel_groupbox = QGroupBox()
@@ -246,44 +296,62 @@ class GizmoSaverUI(QWidget):
         self.main_layout.addWidget(input_groupbox)
         self.main_layout.addWidget(location_groupbox)
         self.main_layout.addWidget(display_groupbox)
-        self.main_layout.addWidget(major_minor_groupbox)
         self.main_layout.addWidget(cancel_groupbox)
 
     """'''''''''''''''''''''''''''''''signals_and_connections'''''''''''''''''''''''''''''''"""
     def signals_and_connections(self):
         """signals and connections for ui"""
+
+        self.filepath_input.textChanged.connect(self.refresh_file_format_display)
+
+        # Whenever the user edits these widgets, re‐compute the filename:
+        self.author_input.textChanged.connect(self.refresh_file_format_display)
+        self.dept_input.currentIndexChanged.connect(self.refresh_file_format_display)
+        self.gizmo_name_input.textChanged.connect(self.refresh_file_format_display)
+        self.major_version_input.valueChanged.connect(self.refresh_file_format_display)
+        self.minor_version_input.valueChanged.connect(self.refresh_file_format_display)
+        self.disciption_input.textChanged.connect(self.refresh_file_format_display)
+        self.file_format_input.currentIndexChanged.connect(self.refresh_file_format_display)
+
         self.cvrt_group_button.clicked.connect(self.convert_to_group)
-
         self.refresh_button.clicked.connect(self.refresh_input_details)
-
-        self.author_input.setText(self.get_system_user())
-
-        self.filepath_input.setText(self.get_default_nuke_directory())
         self.Directory_path_button.clicked.connect(self.browse_folder)
-
         self.path_reset_button.clicked.connect(self.reset_folder_path)
+        self.save_button.clicked.connect(self.on_save_clicked)
+        self.cancel_button.clicked.connect(lambda: self.close())
+
+        # Set defaults
+        self.author_input.setText(self.get_system_user())
+        self.filepath_input.setText(self.get_default_nuke_directory())
 
     """'''''''''''''''''''''''''''''''convert_to_group'''''''''''''''''''''''''''''''"""
     def convert_to_group(self):
         """Converts the selected gizmo node to a Group node."""
-        try:
-            selected_node = nuke.selectedNode()
 
-            if not isinstance(selected_node, nuke.Gizmo):
-                nuke.message("The selected node is not a Gizmo.")
-                return
-            
+        selected_nodes = nuke.selectedNodes()
+
+        if len(selected_nodes) != 1:
+            nuke.message("Please select exactly one Gizmo node.")
+            return
+
+        selected_node = selected_nodes[0]
+        if not isinstance(selected_node, nuke.Gizmo):
+            nuke.message("The selected node is not a Gizmo.")
+            return
+
+        try:
             gizmo_class_name = selected_node.Class()
-            gizmo_unique_name = self.generate_unique_name(gizmo_class_name)
+            standardized_name = self.standardize_name_format(gizmo_class_name)
+            gizmo_unique_name = self.generate_unique_name(standardized_name)
 
             group_node = selected_node.makeGroup()
-
             group_node.setSelected(True)
-
             group_node.knob("name").setValue(gizmo_unique_name)
-            
             group_name = group_node.knob("name").value()
+
+            #Assign UI details from the group name
             self.get_details_from_group_node(group_name)
+
             nuke.message(f"Gizmo successfully converted to Group: {group_name}")
 
         except Exception as e:
@@ -299,23 +367,37 @@ class GizmoSaverUI(QWidget):
             unique_name = f"{base_name}_group{index}"
 
         return unique_name
+    
+    """'''''''''''''''''''''''''''''''Standardize name format for creating group'''''''''''''''''''''''''''''''"""
+    def standardize_name_format(self, name):
+        """Standardize the name by removing any text after major.minor version."""
+        pattern = r"(.+?)[_\-\.](\d+)[_\-\.](\d+)"
+        match = re.match(pattern, name)
+        if match:
+            base_name = f"{match.group(1)}_{match.group(2)}_{match.group(3)}"
+            return base_name
+        return name
 
     """'''''''''''''''''''''''''''''''extracting_group_node_name_details'''''''''''''''''''''''''''''''"""
     def extract_group_node_details(self, group_name):
         """
         Extract author, department, gizmo name, major, and minor versions from a group node name.
         """
-        pattern = re.compile(
-            r"^(?P<author>[a-zA-Z0-9]+)[_\-.]"
-            r"(?P<department>[a-zA-Z0-9]+)[_\-.]"
-            r"(?P<gizmo_name>[a-zA-Z0-9]+)[_\-.]"
-            r"(?P<major>\d+)[_\-.]"
-            r"(?P<minor>\d+)_group\d+$"
-        )
+        try:
+            pattern = re.compile(
+                r"^(?P<author>[a-zA-Z0-9]+)[_\-.]"
+                r"(?P<department>[a-zA-Z0-9]+)[_\-.]"
+                r"(?P<gizmo_name>[a-zA-Z0-9]+)[_\-.]"
+                r"(?P<major>\d+)[_\-.]"
+                r"(?P<minor>\d+)_group\d+$"
+            )
 
-        match = pattern.match(group_name)
-        if match:
-            return match.groupdict()
+            match = re.match(pattern, group_name)
+            if match:
+                return match.groupdict()
+            
+        except Exception:
+            pass
         return None
 
     """'''''''''''''''''''''''''''''''finding_latest_gizmo_file'''''''''''''''''''''''''''''''"""
@@ -329,12 +411,12 @@ class GizmoSaverUI(QWidget):
         try:
             for file in os.listdir(directory):
                 if file.endswith(".gizmo"):
-                    details = extract_gizmo_details(file)
+                    details = self.extract_gizmo_details(file)
                     if details and details["department"] == department and details["gizmo_name"] == gizmo_name:
                         major = int(details["major"])
                         minor = int(details["minor"])
 
-                        if (major > latest_major) or (major == latest_minor and minor > latest_minor):
+                        if (major > latest_major) or (major == latest_major and minor > latest_minor):
                             latest_file = file
                             latest_major = major
                             latest_minor = minor
@@ -368,6 +450,7 @@ class GizmoSaverUI(QWidget):
     def get_details_from_group_node(self, group_name):
         """Get and assign the UI fields from the selected Group node."""
         try:
+            #Extarct details from the group name
             details = self.extract_group_node_details(group_name)
             if not details:
                 nuke.message("Invalid group name format.")
@@ -393,16 +476,183 @@ class GizmoSaverUI(QWidget):
         except Exception as e:
             nuke.message(f"Error getting details from group node: {e}")
 
+    """'''''''''''''''''''''''''''''''format_gizmo_name'''''''''''''''''''''''''''''''"""
+    def format_gizmo_name(self, details, ignore_description=False):
+        """Format gizmo name for display and saving."""
+        selected_format = self.file_format_input.currentText()
+
+        author = details.get("author", "")
+        dept   = details.get("department", "")
+        asset  = details.get("gizmo_name", "")
+        major  = details.get("major", "")
+        minor  = details.get("minor", "")
+
+        desc = ""
+        if not ignore_description:
+            desc = self.disciption_input.text().strip()
+
+        def add_description(base_name, separator):
+            if desc:
+                return f"{base_name}{separator}{desc}"  
+            else:
+                return base_name
+
+        if selected_format == "author_dept_asset_major_minor_description":
+            name = f"{author}_{dept}_{asset}_{major}_{minor}"
+            name = add_description(name, "_")
+            return name + ".gizmo"
+
+        elif selected_format == "author-dept-asset-major-minor-description":
+            name = f"{author}-{dept}-{asset}-{major}-{minor}"
+            name = add_description(name, "-")
+            return name + ".gizmo"
+
+        elif selected_format == "author.dept.asset.major.minor.description":
+            name = f"{author}.{dept}.{asset}.{major}.{minor}"
+            name = add_description(name, ".")
+            return name + ".gizmo"
+
+        name = f"{author}_{dept}_{asset}_{major}_{minor}"
+        name = add_description(name, "_")
+        return name + ".gizmo"
+
+    """'''''''''''''''''''''''''''''''refresh_file_format_display'''''''''''''''''''''''''''''''"""
+    def refresh_file_format_display(self):
+        """
+        Gather the needed details and call 'format_gizmo_name' to
+        get the final filename, then update the label.
+        """
+        details = {
+            "author":       self.author_input.text().strip(),
+            "department":   self.dept_input.currentText().strip(),
+            "gizmo_name":   self.gizmo_name_input.text().strip(),
+            "major":        str(self.major_version_input.value()),
+            "minor":        str(self.minor_version_input.value())
+        }
+        
+        final_name = self.format_gizmo_name(details, ignore_description=False)
+        self.file_format_output.setText(final_name)
+
+        directory = self.filepath_input.text().strip()
+        if not os.path.isdir(directory):
+            directory = self.get_default_nuke_directory()
+
+        full_path = os.path.join(directory, final_name)
+
+        if os.path.isfile(full_path):
+            self.file_exists_warning.setText("Gizmo already Exists in .nuke folder")
+        else:
+            self.file_exists_warning.setText("")
+
     """'''''''''''''''''''''''''''''''refresh_input_details'''''''''''''''''''''''''''''''"""
     def refresh_input_details(self):
         """Refresh the input details based on the currently selected Group node."""
         try:
-            selected_node = nuke.selectedNode()
+            selected_nodes = nuke.selectedNodes()
+            if len(selected_nodes) != 1:
+                nuke.message("Please select exactly one Group node.")
+                return
+
+            selected_node = selected_nodes[0]
+            if selected_node.Class() != "Group":
+                nuke.message("Please select a valid Group node.")
+                return
+
             group_name = selected_node.knob("name").value()
             self.get_details_from_group_node(group_name)
 
         except Exception as e:
             nuke.message(f"Error refreshing UI: {e}")
+
+    """''''''''''''''''''''''''''''''' on_save_clicked logic '''''''''''''''''''''''''''''"""
+    def on_save_clicked(self):
+        """
+        If file already exists in the folder, pop up MajorMinorDialog.
+        """
+        details = {
+            "author":       self.author_input.text().strip(),
+            "department":   self.dept_input.currentText().strip(),
+            "gizmo_name":   self.gizmo_name_input.text().strip(),
+            "major":        str(self.major_version_input.value()),
+            "minor":        str(self.minor_version_input.value())
+        }
+
+        final_name = self.format_gizmo_name(details, ignore_description=False)
+
+        directory = self.filepath_input.text().strip()
+        if not os.path.isdir(directory):
+            directory = self.get_default_nuke_directory()
+
+        full_path = os.path.join(directory, final_name)
+
+        if os.path.isfile(full_path):
+            self.show_major_minor_dialog(details)
+
+        else:
+            try:
+                selected_node = nuke.selectedNode()
+                self.export_group_as_gizmo(selected_node, full_path)
+            except Exception as e:
+                nuke.message(f"Error saving gizmo:\n{e}")
+
+    """''''''''''''''''''''''''''''''' save_group_as_gizmo '''''''''''''''''''''''''''''"""
+    def export_group_as_gizmo(self, group_node, full_path):
+        """
+        Exports the given group_node to 'full_path' as a .gizmo 
+        by using nuke.nodeCopy under the hood. 
+        """
+        selected_nodes = nuke.selectedNodes()
+
+        if len(selected_nodes) != 1:
+            nuke.message("Please select exactly one Group node.")
+            return
+
+        group_node = selected_nodes[0]
+        if group_node.Class() != "Group":
+            nuke.message("Please select a valid Group node.")
+            return
+
+        try:
+            for node in selected_nodes:
+                node.setSelected(False)
+            group_node.setSelected(True)
+
+            nuke.nodeCopy(full_path)
+
+            base, extention = os.path.splitext(full_path)
+            if extention.lower() != ".gizmo":
+                new_path = base + ".gizmo"
+                os.rename(full_path, new_path)
+                full_path = new_path
+
+            nuke.message(f"Group node exported to:\n{full_path}")
+
+        except Exception as e:
+            nuke.message(f"Error exporting as gizmo:\n{e}")
+
+        finally:
+            group_node.setSelected(True)
+
+    """''''''''''''''''''''''''''''''' show_major_minor_dialog '''''''''''''''''''''''''''''"""
+    def show_major_minor_dialog(self, details):
+        """
+        Builds the next major/minor filenames,
+        """
+        current_major = self.major_version_input.value()
+        current_minor = self.minor_version_input.value()
+
+        major_details = details.copy()
+        major_details["major"] = str(current_major + 1)
+        major_details["minor"] = "0"
+        major_file_name = self.format_gizmo_name(major_details, ignore_description=True)
+
+        minor_details = details.copy()
+        minor_details["major"] = str(current_major)
+        minor_details["minor"] = str(current_minor + 1)
+        minor_file_name = self.format_gizmo_name(minor_details, ignore_description=True)
+
+        dialog = MajorMinorDialog(major_file_name, minor_file_name, parent=self)
+        dialog.exec_()
 
     """'''''''''''''''''''''''''''''''get_system_user'''''''''''''''''''''''''''''''"""
     @staticmethod
@@ -439,6 +689,8 @@ class GizmoSaverUI(QWidget):
         """Reset the folder path to the default .nuke directory."""
         default_path = self.get_default_nuke_directory()
         self.filepath_input.setText(default_path)
+
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
