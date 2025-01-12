@@ -326,9 +326,11 @@ class GizmoSaverUI(QWidget):
         # Version Section (Major and Minor)
         major_label = QLabel("Major:")
         self.major_version_input = QSpinBox()
+        self.major_version_input.setMinimum(1)
         self.major_version_input.setValue(1)
         minor_label = QLabel("Minor:")
         self.minor_version_input = QSpinBox()
+        self.minor_version_input.setMinimum(0)
         self.minor_version_input.setValue(0)
 
         major_form_layout = QFormLayout()
@@ -434,21 +436,6 @@ class GizmoSaverUI(QWidget):
         display_main_layout.addWidget(self.file_format_output)
         display_main_layout.addLayout(file_exists_and_save_hlayout)
 
-        # -------------------------------create_cancel_section-------------------------------
-        cancel_groupbox = QGroupBox()
-        cancel_groupbox.setStyleSheet("QGroupBox { border: none; }")
-        cancel_main_layout = QVBoxLayout(cancel_groupbox)
-
-        
-        self.cancel_button = QPushButton("Cancel")
-        self.cancel_button.setMaximumWidth(80)
-
-        cancel_layout = QHBoxLayout()
-        cancel_layout.addWidget(self.cancel_button)
-        cancel_layout.setAlignment(Qt.AlignRight)
-
-        cancel_main_layout.addLayout(cancel_layout)
-
         # -------------------------------Add sub layouts to main layouts-------------------------------
         self.main_layout = QVBoxLayout(self)
         
@@ -456,13 +443,13 @@ class GizmoSaverUI(QWidget):
         self.main_layout.addWidget(input_groupbox)
         self.main_layout.addWidget(location_groupbox)
         self.main_layout.addWidget(display_groupbox)
-        self.main_layout.addWidget(cancel_groupbox)
 
     """'''''''''''''''''''''''''''''''signals_and_connections'''''''''''''''''''''''''''''''"""
     def signals_and_connections(self):
         """signals and connections for ui"""
         self.add_dept_button.clicked.connect(self.on_add_dept_button_clicked)
         self.filepath_input.textChanged.connect(self.refresh_file_format_display)
+        self.filepath_input.textChanged.connect(self.refresh_input_details)
 
         # Whenever the user edits these widgets, re‐compute the filename:
         self.author_input.textChanged.connect(self.refresh_file_format_display)
@@ -478,7 +465,6 @@ class GizmoSaverUI(QWidget):
         self.Directory_path_button.clicked.connect(self.browse_folder)
         self.path_reset_button.clicked.connect(self.reset_folder_path)
         self.save_button.clicked.connect(self.on_save_clicked)
-        self.cancel_button.clicked.connect(lambda: self.close())
 
         # Set defaults
         self.author_input.setText(self.get_system_user())
@@ -736,16 +722,32 @@ class GizmoSaverUI(QWidget):
         try:
             selected_nodes = nuke.selectedNodes()
             if len(selected_nodes) != 1:
-                nuke.message("Please select exactly one Group node.")
                 return
 
             selected_node = selected_nodes[0]
             if selected_node.Class() != "Group":
-                nuke.message("Please select a valid Group node.")
                 return
 
             group_name = selected_node.knob("name").value()
             self.get_details_from_group_node(group_name)
+
+            directory = self.filepath_input.text().strip()
+            if not os.path.isdir(directory):
+                directory = self.get_default_nuke_directory()
+
+            department = self.dept_input.currentText().strip()
+            gizmo_name = self.gizmo_name_input.text().strip()
+
+            latest_file, latest_major, latest_minor = self.find_latest_gizmo_file(
+            directory, department, gizmo_name
+            )
+
+            if latest_file is None:
+                self.major_version_input.setValue(1)
+                self.minor_version_input.setValue(0)
+            else:
+                self.major_version_input.setValue(latest_major)
+                self.minor_version_input.setValue(latest_minor)
 
         except Exception as e:
             nuke.message(f"Error refreshing UI: {e}")
