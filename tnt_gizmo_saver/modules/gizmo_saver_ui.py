@@ -10,7 +10,7 @@ from PySide2.QtWidgets import (
     QPushButton, QSizePolicy, QDialog, QListWidget, QListWidgetItem
 )
 from PySide2.QtWidgets import QFileDialog
-from PySide2.QtGui import QFont
+from PySide2.QtGui import QFont, QIcon, QPixmap
 import json
 
 # -----------------------------------------------------------------------
@@ -20,6 +20,13 @@ class MajorMinorDialog(QDialog):
     def __init__(self, major_filename, minor_filename, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Save Major or Minor Versions")
+        icon_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "icons", "tnt_icon_dark.svg",)
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
+        else:
+            print(f"Icon file not found at: {icon_path}")
+            
         self.setMinimumSize(460, 120)
 
         self.major_filename = major_filename
@@ -94,6 +101,12 @@ class add_department_ui(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Add Departments")
+        icon_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "icons", "tnt_icon_dark.svg",)
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
+        else:
+            print(f"Icon file not found at: {icon_path}")
 
         # Adjust these paths as needed
         self.json_file_path = os.path.join(os.path.dirname(__file__), "departments.json")
@@ -242,6 +255,13 @@ class GizmoSaverUI(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("TNT Gizmo Saver")
+        icon_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "icons", "tnt_icon_dark.svg",)
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
+        else:
+            print(f"Icon file not found at: {icon_path}")
+
         self.set_style_sheet()
         self.init_ui()
         self.signals_and_connections()
