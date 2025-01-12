@@ -3,7 +3,7 @@ import os
 import nuke
 import re
 import getpass
-from PySide2.QtCore import Qt
+from PySide2.QtCore import Qt, QSize
 from PySide2.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
     QGroupBox, QLabel, QLineEdit, QSpinBox, QComboBox, QFormLayout, 
@@ -26,7 +26,7 @@ class MajorMinorDialog(QDialog):
             self.setWindowIcon(QIcon(icon_path))
         else:
             print(f"Icon file not found at: {icon_path}")
-            
+
         self.setMinimumSize(460, 120)
 
         self.major_filename = major_filename
@@ -394,10 +394,14 @@ class GizmoSaverUI(QWidget):
         save_to_label = QLabel("Save To:")
         self.filepath_input = QLineEdit()
 
-        self.Directory_path_button = QPushButton("...")
+        self.Directory_path_button = QPushButton()
+        self.Directory_path_button.setIcon(QIcon(":/qrc/images/FolderIcon.png"))
+        self.Directory_path_button.setIconSize(QSize(16, 16))
         self.Directory_path_button.setMaximumWidth(24)
 
-        self.path_reset_button = QPushButton("r")
+        self.path_reset_button = QPushButton()
+        self.path_reset_button.setIcon(QIcon(":/qrc/images/revert.png"))
+        self.path_reset_button.setIconSize(QSize(16, 16))
         self.path_reset_button.setMaximumWidth(24)
 
         file_format_label = QLabel("File Format:")
