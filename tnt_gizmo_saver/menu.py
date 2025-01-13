@@ -1,4 +1,5 @@
 import nuke
+import os
 from tnt_gizmo_saver.modules.gizmo_saver_ui import GizmoSaverUI
 
 ui_window = None
@@ -21,6 +22,11 @@ def launch_gizmo_saver():
 
 menu = nuke.menu("Nuke")
 custom_menu = menu.addMenu("TNT Tools")
-custom_menu.addCommand("TNT Gizmo Saver", launch_gizmo_saver)
 
-print("TNT Gizmo Saver added to the Nuke menu.")
+current_dir = os.path.dirname(__file__)
+icon_path = os.path.join(current_dir, "icons", "tnt_icon_bright.svg")
+icon_path = os.path.normpath(icon_path).replace("\\", "/")
+
+custom_menu.addCommand("TNT Gizmo Saver", launch_gizmo_saver, icon=icon_path)
+
+print("TNT Gizmo Saver added to the Nuke menu with an icon.")
