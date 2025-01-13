@@ -320,7 +320,8 @@ class GizmoSaverUI(QWidget):
         dept_label = QLabel("Department:")
         self.dept_input = QComboBox()
 
-        self.add_dept_button = QPushButton("+")
+        self.add_dept_button = QPushButton()
+        self.add_dept_button.setIcon(QIcon(":/qrc/images/Add.png"))
         self.add_dept_button.setMaximumWidth(24)
 
         dept_layout = QHBoxLayout()
@@ -446,7 +447,7 @@ class GizmoSaverUI(QWidget):
         self.file_format_output.setAlignment(Qt.AlignCenter)
         self.file_format_output.setStyleSheet(self.display_label_big_text)
 
-        self.file_exists_warning = QLabel("Gizmo already Exists in .nuke folder")
+        self.file_exists_warning = QLabel()
         self.file_exists_warning.setStyleSheet(self.label_small_red_text)
 
         self.save_button = QPushButton("Save")
@@ -718,63 +719,53 @@ class GizmoSaverUI(QWidget):
         Gather the needed details and call 'format_gizmo_name' to
         get the final filename, then update the label.
         """
-        details = {
-            "author":       self.author_input.text().strip(),
-            "department":   self.dept_input.currentText().strip(),
-            "gizmo_name":   self.gizmo_name_input.text().strip(),
-            "major":        str(self.major_version_input.value()),
-            "minor":        str(self.minor_version_input.value())
-        }
-        
-        final_name = self.format_gizmo_name(details, ignore_description=False)
-        self.file_format_output.setText(final_name)
+        try:
+            details = {
+                "author":       self.author_input.text().strip(),
+                "department":   self.dept_input.currentText().strip(),
+                "gizmo_name":   self.gizmo_name_input.text().strip(),
+                "major":        str(self.major_version_input.value()),
+                "minor":        str(self.minor_version_input.value())
+            }
+            
+            final_name = self.format_gizmo_name(details, ignore_description=False)
+            self.file_format_output.setText(final_name)
 
-        directory = self.filepath_input.text().strip()
-        if not os.path.isdir(directory):
-            directory = self.get_default_nuke_directory()
+            directory = self.filepath_input.text().strip()
+            if not os.path.isdir(directory):
+                directory = self.get_default_nuke_directory()
 
-        full_path = os.path.join(directory, final_name)
+            full_path = os.path.join(directory, final_name)
 
-        if os.path.isfile(full_path):
-            self.file_exists_warning.setText("Gizmo already Exists in .nuke folder")
-        else:
-            self.file_exists_warning.setText("")
+            if os.path.isfile(full_path):
+                self.file_exists_warning.setText("Gizmo already Exists in .nuke folder")
+            else:
+                self.file_exists_warning.setText("")
+
+        except Exception as e:
+            nuke.message(f"Error refreshing display: {e}")
 
     """'''''''''''''''''''''''''''''''refresh_input_details'''''''''''''''''''''''''''''''"""
     def refresh_input_details(self):
         """Refresh the input details based on the currently selected Group node."""
         try:
             selected_nodes = nuke.selectedNodes()
-            if len(selected_nodes) != 1:
+            if len(selected_nodes) != 1 or selected_nodes[0].Class() != "Group":
+                if not self.author_input.text().strip():
+                    self.author_input.setText(self.get_system_user())
+                self.dept_input.setCurrentIndex(0)
+                self.gizmo_name_input.clear()
+                self.major_version_input.setValue(1)
+                self.minor_version_input.setValue(0)
+                self.file_exists_warning.setText("")
                 return
 
             selected_node = selected_nodes[0]
-            if selected_node.Class() != "Group":
-                return
-
             group_name = selected_node.knob("name").value()
             self.get_details_from_group_node(group_name)
 
-            directory = self.filepath_input.text().strip()
-            if not os.path.isdir(directory):
-                directory = self.get_default_nuke_directory()
-
-            department = self.dept_input.currentText().strip()
-            gizmo_name = self.gizmo_name_input.text().strip()
-
-            latest_file, latest_major, latest_minor = self.find_latest_gizmo_file(
-            directory, department, gizmo_name
-            )
-
-            if latest_file is None:
-                self.major_version_input.setValue(1)
-                self.minor_version_input.setValue(0)
-            else:
-                self.major_version_input.setValue(latest_major)
-                self.minor_version_input.setValue(latest_minor)
-
         except Exception as e:
-            nuke.message(f"Error refreshing UI: {e}")
+            nuke.message(f"Error refreshing input details: {e}")
 
     """'''''''''''''''''''''''''''''''refresh_input_details_if_group_selected'''''''''''''''''''''''''''''''"""
     def refresh_input_details_if_group_selected(self):
@@ -794,31 +785,37 @@ class GizmoSaverUI(QWidget):
         """
         If file already exists in the folder, pop up MajorMinorDialog.
         """
-        details = {
-            "author":       self.author_input.text().strip(),
-            "department":   self.dept_input.currentText().strip(),
-            "gizmo_name":   self.gizmo_name_input.text().strip(),
-            "major":        str(self.major_version_input.value()),
-            "minor":        str(self.minor_version_input.value())
-        }
+        try:
+            selected_nodes = nuke.selectedNodes()
+            if len(selected_nodes) != 1 or selected_nodes[0].Class() != "Group":
+                nuke.message("Please select exactly one Group node.")
+                return
 
-        final_name = self.format_gizmo_name(details, ignore_description=False)
+            selected_node = selected_nodes[0]
 
-        directory = self.filepath_input.text().strip()
-        if not os.path.isdir(directory):
-            directory = self.get_default_nuke_directory()
+            details = {
+                "author":       self.author_input.text().strip(),
+                "department":   self.dept_input.currentText().strip(),
+                "gizmo_name":   self.gizmo_name_input.text().strip(),
+                "major":        str(self.major_version_input.value()),
+                "minor":        str(self.minor_version_input.value())
+            }
 
-        full_path = os.path.join(directory, final_name)
+            final_name = self.format_gizmo_name(details, ignore_description=False)
 
-        if os.path.isfile(full_path):
-            self.show_major_minor_dialog(details)
+            directory = self.filepath_input.text().strip()
+            if not os.path.isdir(directory):
+                directory = self.get_default_nuke_directory()
 
-        else:
-            try:
-                selected_node = nuke.selectedNode()
+            full_path = os.path.join(directory, final_name)
+
+            if os.path.isfile(full_path):
+                self.show_major_minor_dialog(details)
+            else:
                 self.export_group_as_gizmo(selected_node, full_path)
-            except Exception as e:
-                nuke.message(f"Error saving gizmo:\n{e}")
+
+        except Exception as e:
+            nuke.message(f"Error saving gizmo:\n{e}")
 
     """''''''''''''''''''''''''''''''' save_group_as_gizmo '''''''''''''''''''''''''''''"""
     def export_group_as_gizmo(self, group_node, full_path):
