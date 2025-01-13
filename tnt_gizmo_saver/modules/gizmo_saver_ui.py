@@ -322,7 +322,8 @@ class GizmoSaverUI(QWidget):
 
         self.add_dept_button = QPushButton()
         self.add_dept_button.setIcon(QIcon(":/qrc/images/Add.png"))
-        self.add_dept_button.setMaximumWidth(24)
+        self.add_dept_button.setIconSize(QSize(16, 16))
+        self.add_dept_button.setMaximumSize(20, 20)
 
         dept_layout = QHBoxLayout()
         dept_layout.addWidget(self.dept_input, stretch=1)
@@ -347,10 +348,12 @@ class GizmoSaverUI(QWidget):
         # Version Section (Major and Minor)
         major_label = QLabel("Major:")
         self.major_version_input = QSpinBox()
+        self.major_version_input.setMaximumHeight(24)
         self.major_version_input.setMinimum(1)
         self.major_version_input.setValue(1)
         minor_label = QLabel("Minor:")
         self.minor_version_input = QSpinBox()
+        self.minor_version_input.setMaximumHeight(24)
         self.minor_version_input.setMinimum(0)
         self.minor_version_input.setValue(0)
 
@@ -398,12 +401,12 @@ class GizmoSaverUI(QWidget):
         self.Directory_path_button = QPushButton()
         self.Directory_path_button.setIcon(QIcon(":/qrc/images/FolderIcon.png"))
         self.Directory_path_button.setIconSize(QSize(16, 16))
-        self.Directory_path_button.setMaximumWidth(24)
+        self.Directory_path_button.setMaximumSize(20, 20)
 
         self.path_reset_button = QPushButton()
         self.path_reset_button.setIcon(QIcon(":/qrc/images/revert.png"))
         self.path_reset_button.setIconSize(QSize(16, 16))
-        self.path_reset_button.setMaximumWidth(24)
+        self.path_reset_button.setMaximumSize(20, 20)
 
         file_format_label = QLabel("File Format:")
         self.file_format_input = QComboBox()
@@ -750,19 +753,44 @@ class GizmoSaverUI(QWidget):
         """Refresh the input details based on the currently selected Group node."""
         try:
             selected_nodes = nuke.selectedNodes()
-            if len(selected_nodes) != 1 or selected_nodes[0].Class() != "Group":
+            is_group_selected = (
+                len(selected_nodes) == 1 and
+                selected_nodes[0].Class() == "Group"
+            )
+
+            if is_group_selected:
+                group_node = selected_nodes[0]
+                group_name = group_node.knob("name").value()
+                self.get_details_from_group_node(group_name)
+            else:
                 if not self.author_input.text().strip():
                     self.author_input.setText(self.get_system_user())
+
                 self.dept_input.setCurrentIndex(0)
                 self.gizmo_name_input.clear()
                 self.major_version_input.setValue(1)
                 self.minor_version_input.setValue(0)
                 self.file_exists_warning.setText("")
-                return
 
-            selected_node = selected_nodes[0]
-            group_name = selected_node.knob("name").value()
-            self.get_details_from_group_node(group_name)
+            directory = self.filepath_input.text().strip()
+            if not os.path.isdir(directory):
+                directory = self.get_default_nuke_directory()
+
+            department = self.dept_input.currentText().strip()
+            gizmo_name = self.gizmo_name_input.text().strip()
+
+            latest_file, latest_major, latest_minor = self.find_latest_gizmo_file(
+                directory, department, gizmo_name
+            )
+
+            if latest_file is None:
+                self.major_version_input.setValue(1)
+                self.minor_version_input.setValue(0)
+            else:
+                self.major_version_input.setValue(latest_major)
+                self.minor_version_input.setValue(latest_minor)
+
+            self.refresh_file_format_display()
 
         except Exception as e:
             nuke.message(f"Error refreshing input details: {e}")
@@ -896,15 +924,21 @@ class GizmoSaverUI(QWidget):
     def browse_folder(self):
         """Open a folder browser dialog and update the current folder path"""
 
-        current_path = self.filepath_input.text()
+        try:
+            current_path = self.filepath_input.text()
 
-        if not os.path.isdir(current_path):
-            current_path = self.get_default_nuke_directory()
+            if not os.path.isdir(current_path):
+                current_path = self.get_default_nuke_directory()
 
-        folder_path = QFileDialog.getExistingDirectory(self, "Select Save Directory", current_path)
+            folder_path = QFileDialog.getExistingDirectory(self, "Select Save Directory", current_path)
 
-        if folder_path:
-            self.filepath_input.setText(folder_path)
+            if folder_path:
+                self.filepath_input.setText(folder_path)
+                self.refresh_input_details()
+                self.refresh_file_format_display() 
+
+        except Exception as e:
+            nuke.message(f"Error selecting directory: {e}")
 
     """'''''''''''''''''''''''''''''''reset_folder_path'''''''''''''''''''''''''''''''"""
     def reset_folder_path(self):
