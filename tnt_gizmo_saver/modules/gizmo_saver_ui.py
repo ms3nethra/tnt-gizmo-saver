@@ -252,8 +252,8 @@ class add_department_ui(QDialog):
 # Gizmo Saver Main UI
 # -----------------------------------------------------------------------
 class GizmoSaverUI(QWidget):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super(GizmoSaverUI, self).__init__(parent)
         self.setWindowTitle("TNT Gizmo Saver")
         icon_path = os.path.join(
             os.path.dirname(os.path.dirname(__file__)), "icons", "tnt_icon_dark.svg",)

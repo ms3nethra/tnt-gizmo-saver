@@ -1,8 +1,16 @@
 import nuke
 import os
+from PySide2.QtCore import Qt
+from PySide2 import QtWidgets
 from tnt_gizmo_saver.modules.gizmo_saver_ui import GizmoSaverUI
 
 ui_window = None
+
+def get_nuke_main_window():
+    for widget in QtWidgets.QApplication.topLevelWidgets():
+        if widget.metaObject().className() == "Foundry::UI::DockMainWindow":
+            return widget
+    return None
 
 def launch_gizmo_saver():
     """Launch the Gizmo Saver UI."""
@@ -10,7 +18,10 @@ def launch_gizmo_saver():
     try:
         # Check if the UI already exists and is visible
         if not ui_window or not ui_window.isVisible():
-            ui_window = GizmoSaverUI()
+            main_window = get_nuke_main_window()
+
+            ui_window = GizmoSaverUI(parent=main_window)
+            ui_window.setWindowFlags(Qt.Window | Qt.Tool)
             ui_window.show()
         else:
             # If it's already open, bring it to the front
