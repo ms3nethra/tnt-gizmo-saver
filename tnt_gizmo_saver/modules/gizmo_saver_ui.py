@@ -262,6 +262,8 @@ class GizmoSaverUI(QWidget):
         else:
             print(f"Icon file not found at: {icon_path}")
 
+        self.setWindowFlags(Qt.Window | Qt.WindowStaysOnTopHint)
+
         self.set_style_sheet()
         self.init_ui()
         self.signals_and_connections()

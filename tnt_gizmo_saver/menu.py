@@ -21,8 +21,10 @@ def launch_gizmo_saver():
             main_window = get_nuke_main_window()
 
             ui_window = GizmoSaverUI(parent=main_window)
-            ui_window.setWindowFlags(Qt.Window | Qt.Tool)
+            # ui_window.setWindowFlags(Qt.Window | Qt.Tool)
             ui_window.show()
+            ui_window.raise_()
+            ui_window.activateWindow()
         else:
             # If it's already open, bring it to the front
             ui_window.raise_()
