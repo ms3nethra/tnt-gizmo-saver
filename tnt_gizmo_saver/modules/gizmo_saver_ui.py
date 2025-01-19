@@ -81,13 +81,13 @@ class MajorMinorDialog(QDialog):
                 directory = parent_ui.get_default_nuke_directory()
 
             full_path = os.path.join(directory, gizmo_filename)
-
             selected_node = nuke.selectedNode()
-            if not isinstance(selected_node, nuke.Group):
-                nuke.message("Please select a Group node to save.")
+
+            if selected_node.Class() != "Group":
+                nuke.message("Please select a valid Group node.")
                 return
 
-            parent_ui.export_group_as_gizmo(selected_node, full_path)
+            parent_ui.export_group_as_gizmo(selected_node, full_path, gizmo_filename[:-6])
 
         except Exception as e:
             nuke.message(f"Error saving major/minor:\n{e}")
@@ -843,42 +843,46 @@ class GizmoSaverUI(QWidget):
             full_path = os.path.join(directory, final_name)
 
             if os.path.isfile(full_path):
-                self.show_major_minor_dialog(details)
+                self.show_major_minor_dialog(details, selected_node)
             else:
-                self.export_group_as_gizmo(selected_node, full_path)
+                self.export_group_as_gizmo(selected_node, full_path, final_name)
 
         except Exception as e:
             nuke.message(f"Error saving gizmo:\n{e}")
 
     """''''''''''''''''''''''''''''''' save_group_as_gizmo '''''''''''''''''''''''''''''"""
-    def export_group_as_gizmo(self, group_node, full_path):
+    def export_group_as_gizmo(self, group_node, full_path, final_name):
         """
         Exports the given group_node to 'full_path' as a .gizmo 
         by using nuke.nodeCopy under the hood. 
         """
-        selected_nodes = nuke.selectedNodes()
-
-        if len(selected_nodes) != 1:
-            nuke.message("Please select exactly one Group node.")
-            return
-
-        group_node = selected_nodes[0]
-        if group_node.Class() != "Group":
-            nuke.message("Please select a valid Group node.")
-            return
-
         try:
+            selected_nodes = nuke.selectedNodes()
+            if len(selected_nodes) != 1 or selected_nodes[0].Class() != "Group":
+                nuke.message("Please select exactly one Group node.")
+                return
+
             for node in selected_nodes:
                 node.setSelected(False)
             group_node.setSelected(True)
 
-            nuke.nodeCopy(full_path)
+            base_name = final_name.replace(".gizmo", "")
 
-            base, extention = os.path.splitext(full_path)
-            if extention.lower() != ".gizmo":
-                new_path = base + ".gizmo"
-                os.rename(full_path, new_path)
-                full_path = new_path
+            group_name = self.generate_unique_name(base_name)
+            group_node.knob("name").setValue(group_name)
+
+            temp_file_path = full_path + ".tmp"
+            nuke.nodeCopy(temp_file_path)
+
+            with open(temp_file_path, "r") as temp_file:
+                data = temp_file.readlines()
+
+            data = [line.replace("Group {", f"Gizmo {{\n name {final_name}", 1) if "Group {" in line else line for line in data]
+
+            with open(full_path, "w") as gizmo_file:
+                gizmo_file.writelines(data)
+
+            os.remove(temp_file_path)
 
             nuke.message(f"Group node exported to:\n{full_path}")
 
@@ -889,25 +893,43 @@ class GizmoSaverUI(QWidget):
             group_node.setSelected(True)
 
     """''''''''''''''''''''''''''''''' show_major_minor_dialog '''''''''''''''''''''''''''''"""
-    def show_major_minor_dialog(self, details):
+    def show_major_minor_dialog(self, details, selected_node):
         """
         Builds the next major/minor filenames,
         """
-        current_major = self.major_version_input.value()
-        current_minor = self.minor_version_input.value()
+        try:
+            current_major = self.major_version_input.value()
+            current_minor = self.minor_version_input.value()
 
-        major_details = details.copy()
-        major_details["major"] = str(current_major + 1)
-        major_details["minor"] = "0"
-        major_file_name = self.format_gizmo_name(major_details, ignore_description=True)
+            major_details = details.copy()
+            major_details["major"] = str(current_major + 1)
+            major_details["minor"] = "0"
+            major_file_name = self.format_gizmo_name(major_details, ignore_description=True)
 
-        minor_details = details.copy()
-        minor_details["major"] = str(current_major)
-        minor_details["minor"] = str(current_minor + 1)
-        minor_file_name = self.format_gizmo_name(minor_details, ignore_description=True)
+            minor_details = details.copy()
+            minor_details["major"] = str(current_major)
+            minor_details["minor"] = str(current_minor + 1)
+            minor_file_name = self.format_gizmo_name(minor_details, ignore_description=True)
 
-        dialog = MajorMinorDialog(major_file_name, minor_file_name, parent=self)
-        dialog.exec_()
+            dialog = MajorMinorDialog(major_file_name, minor_file_name, parent=self)
+
+            def save_major():
+                major_full_path = os.path.join(self.filepath_input.text().strip(), major_file_name)
+                self.export_group_as_gizmo(selected_node, major_full_path, major_file_name[:-6])  
+                dialog.accept()
+
+            def save_minor():
+                minor_full_path = os.path.join(self.filepath_input.text().strip(), minor_file_name)
+                self.export_group_as_gizmo(selected_node, minor_full_path, minor_file_name[:-6])
+                dialog.accept()
+
+            dialog.major_version_save_button.clicked.connect(save_major)
+            dialog.minor_version_save_button.clicked.connect(save_minor)
+
+            dialog.exec_()
+
+        except Exception as e:
+            nuke.message(f"Error in MajorMinorDialog:\n{e}")
 
     """'''''''''''''''''''''''''''''''get_system_user'''''''''''''''''''''''''''''''"""
     @staticmethod
