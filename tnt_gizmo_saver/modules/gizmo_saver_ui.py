@@ -768,11 +768,14 @@ class GizmoSaverUI(QWidget):
                 if not self.author_input.text().strip():
                     self.author_input.setText(self.get_system_user())
 
-                self.dept_input.setCurrentIndex(0)
-                self.gizmo_name_input.clear()
-                self.major_version_input.setValue(1)
-                self.minor_version_input.setValue(0)
-                self.file_exists_warning.setText("")
+                if self.dept_input.currentIndex() == 0:
+                    pass
+
+                if not self.gizmo_name_input.text().strip():
+                    pass
+
+                if self.major_version_input.value() == 1 and self.minor_version_input.value() == 0:
+                    pass
 
             directory = self.filepath_input.text().strip()
             if not os.path.isdir(directory):
@@ -786,8 +789,8 @@ class GizmoSaverUI(QWidget):
             )
 
             if latest_file is None:
-                self.major_version_input.setValue(1)
-                self.minor_version_input.setValue(0)
+                if self.major_version_input.value() == 1 and self.minor_version_input.value() == 0:
+                    pass
             else:
                 self.major_version_input.setValue(latest_major)
                 self.minor_version_input.setValue(latest_minor)
