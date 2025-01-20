@@ -519,8 +519,8 @@ class GizmoSaverUI(QWidget):
             return
 
         try:
-            gizmo_node_name = selected_node.knob("name").value()
-            standardized_name = self.standardize_name_format(gizmo_node_name)
+            gizmo_class_name = selected_node.Class()
+            standardized_name = self.standardize_name_format(gizmo_class_name)
             gizmo_unique_name = self.generate_unique_name(standardized_name)
 
             group_node = selected_node.makeGroup()
@@ -677,6 +677,8 @@ class GizmoSaverUI(QWidget):
             self.file_format_output.setText(latest_file or "No existing file.")
             self.major_version_input.setValue(latest_major)
             self.minor_version_input.setValue(latest_minor)
+
+            self.refresh_file_format_display()
 
         except Exception as e:
             nuke.message(f"Error getting details from group node: {e}")
