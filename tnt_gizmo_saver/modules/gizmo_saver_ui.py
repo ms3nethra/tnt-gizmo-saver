@@ -760,47 +760,36 @@ class GizmoSaverUI(QWidget):
         """Refresh the input details based on the currently selected Group node."""
         try:
             selected_nodes = nuke.selectedNodes()
-            is_group_selected = (
-                len(selected_nodes) == 1 and
-                selected_nodes[0].Class() == "Group"
-            )
 
-            if is_group_selected:
+            # Check if exactly one Group node is selected
+            if len(selected_nodes) == 1 and selected_nodes[0].Class() == "Group":
                 group_node = selected_nodes[0]
                 group_name = group_node.knob("name").value()
                 self.get_details_from_group_node(group_name)
+
+                directory = self.filepath_input.text().strip()
+                if not os.path.isdir(directory):
+                    directory = self.get_default_nuke_directory()
+
+                department = self.dept_input.currentText().strip()
+                gizmo_name = self.gizmo_name_input.text().strip()
+
+                # Find the latest gizmo version
+                latest_file, latest_major, latest_minor = self.find_latest_gizmo_file(
+                    directory, department, gizmo_name
+                )
+
+                if latest_file is None:
+                    self.major_version_input.setValue(1)
+                    self.minor_version_input.setValue(0)
+                else:
+                    self.major_version_input.setValue(latest_major)
+                    self.minor_version_input.setValue(latest_minor)
+
+                self.refresh_file_format_display()
+
             else:
-                if not self.author_input.text().strip():
-                    self.author_input.setText(self.get_system_user())
-
-                if self.dept_input.currentIndex() == 0:
-                    pass
-
-                if not self.gizmo_name_input.text().strip():
-                    pass
-
-                if self.major_version_input.value() == 1 and self.minor_version_input.value() == 0:
-                    pass
-
-            directory = self.filepath_input.text().strip()
-            if not os.path.isdir(directory):
-                directory = self.get_default_nuke_directory()
-
-            department = self.dept_input.currentText().strip()
-            gizmo_name = self.gizmo_name_input.text().strip()
-
-            latest_file, latest_major, latest_minor = self.find_latest_gizmo_file(
-                directory, department, gizmo_name
-            )
-
-            if latest_file is None:
-                if self.major_version_input.value() == 1 and self.minor_version_input.value() == 0:
-                    pass
-            else:
-                self.major_version_input.setValue(latest_major)
-                self.minor_version_input.setValue(latest_minor)
-
-            self.refresh_file_format_display()
+                self.refresh_file_format_display()
 
         except Exception as e:
             nuke.message(f"Error refreshing input details: {e}")
@@ -966,8 +955,13 @@ class GizmoSaverUI(QWidget):
 
             if folder_path:
                 self.filepath_input.setText(folder_path)
-                self.refresh_input_details()
-                self.refresh_file_format_display() 
+
+                selected_nodes = nuke.selectedNodes()
+                if len(selected_nodes) == 1 and selected_nodes[0].Class() == "Group":
+                    self.refresh_input_details()
+
+                else:
+                    self.refresh_file_format_display()
 
         except Exception as e:
             nuke.message(f"Error selecting directory: {e}")
