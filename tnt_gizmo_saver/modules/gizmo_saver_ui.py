@@ -262,7 +262,10 @@ class GizmoSaverUI(QWidget):
         else:
             print(f"Icon file not found at: {icon_path}")
 
-        self.setWindowFlags(Qt.Window | Qt.WindowStaysOnTopHint)
+        if parent:
+            self.setWindowFlags(Qt.Window | Qt.Dialog | Qt.WindowCloseButtonHint)
+        else:
+            self.setWindowFlags(Qt.Window | Qt.WindowCloseButtonHint)
 
         self.set_style_sheet()
         self.init_ui()
@@ -516,8 +519,8 @@ class GizmoSaverUI(QWidget):
             return
 
         try:
-            gizmo_class_name = selected_node.Class()
-            standardized_name = self.standardize_name_format(gizmo_class_name)
+            gizmo_node_name = selected_node.knob("name").value()
+            standardized_name = self.standardize_name_format(gizmo_node_name)
             gizmo_unique_name = self.generate_unique_name(standardized_name)
 
             group_node = selected_node.makeGroup()
