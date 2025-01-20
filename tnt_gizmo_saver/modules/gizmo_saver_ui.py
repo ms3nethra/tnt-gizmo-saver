@@ -31,6 +31,7 @@ class MajorMinorDialog(QDialog):
 
         self.major_filename = major_filename
         self.minor_filename = minor_filename
+        self.exported = False
 
         main_layout = QVBoxLayout(self)
 
@@ -64,10 +65,16 @@ class MajorMinorDialog(QDialog):
         self.minor_version_save_button.clicked.connect(self.on_save_minor)
 
     def on_save_major(self):
-        self.save_group_as_gizmo_dialog(self.major_filename)
+        if not self.exported:
+            self.save_group_as_gizmo_dialog(self.major_filename)
+            self.exported = True
+            self.accept()
 
     def on_save_minor(self):
-        self.save_group_as_gizmo_dialog(self.minor_filename)
+        if not self.exported:
+            self.save_group_as_gizmo_dialog(self.minor_filename)
+            self.exported = True
+            self.accept()
 
     def save_group_as_gizmo_dialog(self, gizmo_filename):
         try:
@@ -856,14 +863,12 @@ class GizmoSaverUI(QWidget):
                 nuke.message("Please select exactly one Group node.")
                 return
 
-            for node in selected_nodes:
-                node.setSelected(False)
-            group_node.setSelected(True)
+            nuke.nodeCopy("%clipboard%")
+            cloned_node = nuke.nodePaste("%clipboard%")
 
             base_name = final_name.replace(".gizmo", "")
-
-            group_name = self.generate_unique_name(base_name)
-            group_node.knob("name").setValue(group_name)
+            group_name = self.generate_unique_number(base_name)
+            cloned_node.knob("name").setValue(group_name)
 
             temp_file_path = full_path + ".tmp"
             nuke.nodeCopy(temp_file_path)
@@ -877,14 +882,25 @@ class GizmoSaverUI(QWidget):
                 gizmo_file.writelines(data)
 
             os.remove(temp_file_path)
+            nuke.delete(cloned_node)
+
+            group_node.setSelected(True)
 
             nuke.message(f"Group node exported to:\n{full_path}")
 
         except Exception as e:
             nuke.message(f"Error exporting as gizmo:\n{e}")
 
-        finally:
-            group_node.setSelected(True)
+    """'''''''''''''''''''''''''''''''generate_unique_number for gizmo name''''''''''''''''''''''''''''''"""
+    def generate_unique_number(self, base_name):
+        """Generates a unique name by appending _X, X is a numbe"""
+        index = 1
+        unique_number = f"{base_name}_{index}"
+        while nuke.toNode(unique_number):
+            index += 1
+            unique_number = f"{unique_number}_{index}"
+
+        return unique_number
 
     """''''''''''''''''''''''''''''''' show_major_minor_dialog '''''''''''''''''''''''''''''"""
     def show_major_minor_dialog(self, details, selected_node):
