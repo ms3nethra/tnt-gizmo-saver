@@ -18,7 +18,8 @@ import json
 # -----------------------------------------------------------------------
 class MajorMinorDialog(QDialog):
     def __init__(self, major_filename, minor_filename, parent=None):
-        super().__init__(parent)
+        super(MajorMinorDialog, self).__init__(parent)
+
         self.setWindowTitle("Save Major or Minor Versions")
         icon_path = os.path.join(
             os.path.dirname(os.path.dirname(__file__)), "icons", "tnt_icon_dark.svg",)
@@ -31,7 +32,6 @@ class MajorMinorDialog(QDialog):
 
         self.major_filename = major_filename
         self.minor_filename = minor_filename
-        self.exported = False
 
         main_layout = QVBoxLayout(self)
 
@@ -60,46 +60,6 @@ class MajorMinorDialog(QDialog):
         major_minor_main_layout.addLayout(minor_hlayout)
 
         main_layout.addWidget(major_minor_groupbox)
-
-        self.major_version_save_button.clicked.connect(self.on_save_major)
-        self.minor_version_save_button.clicked.connect(self.on_save_minor)
-
-    def on_save_major(self):
-        if not self.exported:
-            self.save_group_as_gizmo_dialog(self.major_filename)
-            self.exported = True
-            self.accept()
-
-    def on_save_minor(self):
-        if not self.exported:
-            self.save_group_as_gizmo_dialog(self.minor_filename)
-            self.exported = True
-            self.accept()
-
-    def save_group_as_gizmo_dialog(self, gizmo_filename):
-        try:
-            parent_ui = self.parent()
-            if not parent_ui:
-                nuke.message("Error: missing parent UI.")
-                return
-
-            directory = parent_ui.filepath_input.text().strip()
-            if not os.path.isdir(directory):
-                directory = parent_ui.get_default_nuke_directory()
-
-            full_path = os.path.join(directory, gizmo_filename)
-            selected_node = nuke.selectedNode()
-
-            if selected_node.Class() != "Group":
-                nuke.message("Please select a valid Group node.")
-                return
-
-            parent_ui.export_group_as_gizmo(selected_node, full_path, gizmo_filename[:-6])
-
-        except Exception as e:
-            nuke.message(f"Error saving major/minor:\n{e}")
-
-        self.accept()
 
 # -----------------------------------------------------------------------
 # Add Departments to department combo box
@@ -838,8 +798,9 @@ class GizmoSaverUI(QWidget):
             final_name = self.format_gizmo_name(details, ignore_description=False)
 
             directory = self.filepath_input.text().strip()
-            if not os.path.isdir(directory):
-                directory = self.get_default_nuke_directory()
+            if not os.path.exists(directory):
+                nuke.message(f"Directory does not exist: {directory}")
+                return
 
             full_path = os.path.join(directory, final_name)
 
